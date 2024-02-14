@@ -9,51 +9,51 @@ mod tests {
         let input: &str = "=+(){},;!-/*<>";
         let expected_tokens: Vec<Token> = vec![
             Token {
-                r#type: TokenType::ASSIGN,
+                r#type: TokenType::Assign,
                 literal: String::from('='),
             },
             Token {
-                r#type: TokenType::PLUS,
+                r#type: TokenType::Plus,
                 literal: String::from('+'),
             },
             Token {
-                r#type: TokenType::LPAREN,
+                r#type: TokenType::LParen,
                 literal: String::from('('),
             },
             Token {
-                r#type: TokenType::RPAREN,
+                r#type: TokenType::RParen,
                 literal: String::from(')'),
             },
             Token {
-                r#type: TokenType::LBRACE,
+                r#type: TokenType::LBrace,
                 literal: String::from('{'),
             },
             Token {
-                r#type: TokenType::RBRACE,
+                r#type: TokenType::RBrace,
                 literal: String::from('}'),
             },
             Token {
-                r#type: TokenType::COMMA,
+                r#type: TokenType::Comma,
                 literal: String::from(','),
             },
             Token {
-                r#type: TokenType::SEMICOLON,
+                r#type: TokenType::Semicolon,
                 literal: String::from(';'),
             },
             Token {
-                r#type: TokenType::BANG,
+                r#type: TokenType::Bang,
                 literal: String::from('!'),
             },
             Token {
-                r#type: TokenType::MINUS,
+                r#type: TokenType::Minus,
                 literal: String::from('-'),
             },
             Token {
-                r#type: TokenType::SLASH,
+                r#type: TokenType::Slash,
                 literal: String::from('/'),
             },
             Token {
-                r#type: TokenType::ASTERISK,
+                r#type: TokenType::Asterisk,
                 literal: String::from('*'),
             },
             Token {
@@ -101,15 +101,15 @@ if (5 < 10) {
 
         let expected_tokens: Vec<Token> = vec![
             Token {
-                r#type: TokenType::LET,
+                r#type: TokenType::Let,
                 literal: String::from("let"),
             },
             Token {
-                r#type: TokenType::IDENT,
+                r#type: TokenType::Ident,
                 literal: String::from("five"),
             },
             Token {
-                r#type: TokenType::ASSIGN,
+                r#type: TokenType::Assign,
                 literal: String::from('='),
             },
             Token {
@@ -117,19 +117,19 @@ if (5 < 10) {
                 literal: String::from("5"),
             },
             Token {
-                r#type: TokenType::SEMICOLON,
+                r#type: TokenType::Semicolon,
                 literal: String::from(';'),
             },
             Token {
-                r#type: TokenType::LET,
+                r#type: TokenType::Let,
                 literal: String::from("let"),
             },
             Token {
-                r#type: TokenType::IDENT,
+                r#type: TokenType::Ident,
                 literal: String::from("ten"),
             },
             Token {
-                r#type: TokenType::ASSIGN,
+                r#type: TokenType::Assign,
                 literal: String::from('='),
             },
             Token {
@@ -137,127 +137,127 @@ if (5 < 10) {
                 literal: String::from("10"),
             },
             Token {
-                r#type: TokenType::SEMICOLON,
+                r#type: TokenType::Semicolon,
                 literal: String::from(';'),
             },
             Token {
-                r#type: TokenType::LET,
+                r#type: TokenType::Let,
                 literal: String::from("let"),
             },
             Token {
-                r#type: TokenType::IDENT,
+                r#type: TokenType::Ident,
                 literal: String::from("add"),
             },
             Token {
-                r#type: TokenType::ASSIGN,
+                r#type: TokenType::Assign,
                 literal: String::from('='),
             },
             Token {
-                r#type: TokenType::FUNCTION,
+                r#type: TokenType::Function,
                 literal: String::from("fn"),
             },
             Token {
-                r#type: TokenType::LPAREN,
+                r#type: TokenType::LParen,
                 literal: String::from('('),
             },
             Token {
-                r#type: TokenType::IDENT,
+                r#type: TokenType::Ident,
                 literal: String::from("x"),
             },
             Token {
-                r#type: TokenType::COMMA,
+                r#type: TokenType::Comma,
                 literal: String::from(','),
             },
             Token {
-                r#type: TokenType::IDENT,
+                r#type: TokenType::Ident,
                 literal: String::from("y"),
             },
             Token {
-                r#type: TokenType::RPAREN,
+                r#type: TokenType::RParen,
                 literal: String::from(')'),
             },
             Token {
-                r#type: TokenType::LBRACE,
+                r#type: TokenType::LBrace,
                 literal: String::from('{'),
             },
             Token {
-                r#type: TokenType::IDENT,
+                r#type: TokenType::Ident,
                 literal: String::from("x"),
             },
             Token {
-                r#type: TokenType::PLUS,
+                r#type: TokenType::Plus,
                 literal: String::from('+'),
             },
             Token {
-                r#type: TokenType::IDENT,
+                r#type: TokenType::Ident,
                 literal: String::from("y"),
             },
             Token {
-                r#type: TokenType::SEMICOLON,
+                r#type: TokenType::Semicolon,
                 literal: String::from(';'),
             },
             Token {
-                r#type: TokenType::RBRACE,
+                r#type: TokenType::RBrace,
                 literal: String::from('}'),
             },
             Token {
-                r#type: TokenType::SEMICOLON,
+                r#type: TokenType::Semicolon,
                 literal: String::from(';'),
             },
             Token {
-                r#type: TokenType::LET,
+                r#type: TokenType::Let,
                 literal: String::from("let"),
             },
             Token {
-                r#type: TokenType::IDENT,
+                r#type: TokenType::Ident,
                 literal: String::from("result"),
             },
             Token {
-                r#type: TokenType::ASSIGN,
+                r#type: TokenType::Assign,
                 literal: String::from('='),
             },
             Token {
-                r#type: TokenType::IDENT,
+                r#type: TokenType::Ident,
                 literal: String::from("add"),
             },
             Token {
-                r#type: TokenType::LPAREN,
+                r#type: TokenType::LParen,
                 literal: String::from('('),
             },
             Token {
-                r#type: TokenType::IDENT,
+                r#type: TokenType::Ident,
                 literal: String::from("five"),
             },
             Token {
-                r#type: TokenType::COMMA,
+                r#type: TokenType::Comma,
                 literal: String::from(','),
             },
             Token {
-                r#type: TokenType::IDENT,
+                r#type: TokenType::Ident,
                 literal: String::from("ten"),
             },
             Token {
-                r#type: TokenType::RPAREN,
+                r#type: TokenType::RParen,
                 literal: String::from(')'),
             },
             Token {
-                r#type: TokenType::SEMICOLON,
+                r#type: TokenType::Semicolon,
                 literal: String::from(';'),
             },
             Token {
-                r#type: TokenType::BANG,
+                r#type: TokenType::Bang,
                 literal: String::from('!'),
             },
             Token {
-                r#type: TokenType::MINUS,
+                r#type: TokenType::Minus,
                 literal: String::from('-'),
             },
             Token {
-                r#type: TokenType::SLASH,
+                r#type: TokenType::Slash,
                 literal: String::from('/'),
             },
             Token {
-                r#type: TokenType::ASTERISK,
+                r#type: TokenType::Asterisk,
                 literal: String::from('*'),
             },
             Token {
@@ -265,7 +265,7 @@ if (5 < 10) {
                 literal: String::from("5"),
             },
             Token {
-                r#type: TokenType::SEMICOLON,
+                r#type: TokenType::Semicolon,
                 literal: String::from(';'),
             },
             Token {
@@ -289,15 +289,15 @@ if (5 < 10) {
                 literal: String::from("5"),
             },
             Token {
-                r#type: TokenType::SEMICOLON,
+                r#type: TokenType::Semicolon,
                 literal: String::from(';'),
             },
             Token {
-                r#type: TokenType::IF,
+                r#type: TokenType::If,
                 literal: String::from("if"),
             },
             Token {
-                r#type: TokenType::LPAREN,
+                r#type: TokenType::LParen,
                 literal: String::from('('),
             },
             Token {
@@ -313,51 +313,51 @@ if (5 < 10) {
                 literal: String::from("10"),
             },
             Token {
-                r#type: TokenType::RPAREN,
+                r#type: TokenType::RParen,
                 literal: String::from(')'),
             },
             Token {
-                r#type: TokenType::LBRACE,
+                r#type: TokenType::LBrace,
                 literal: String::from('{'),
             },
             Token {
-                r#type: TokenType::RETURN,
+                r#type: TokenType::Return,
                 literal: String::from("return"),
             },
             Token {
-                r#type: TokenType::TRUE,
+                r#type: TokenType::True,
                 literal: String::from("true"),
             },
             Token {
-                r#type: TokenType::SEMICOLON,
+                r#type: TokenType::Semicolon,
                 literal: String::from(';'),
             },
             Token {
-                r#type: TokenType::RBRACE,
+                r#type: TokenType::RBrace,
                 literal: String::from('}'),
             },
             Token {
-                r#type: TokenType::ELSE,
+                r#type: TokenType::Else,
                 literal: String::from("else"),
             },
             Token {
-                r#type: TokenType::LBRACE,
+                r#type: TokenType::LBrace,
                 literal: String::from('{'),
             },
             Token {
-                r#type: TokenType::RETURN,
+                r#type: TokenType::Return,
                 literal: String::from("return"),
             },
             Token {
-                r#type: TokenType::FALSE,
+                r#type: TokenType::False,
                 literal: String::from("false"),
             },
             Token {
-                r#type: TokenType::SEMICOLON,
+                r#type: TokenType::Semicolon,
                 literal: String::from(';'),
             },
             Token {
-                r#type: TokenType::RBRACE,
+                r#type: TokenType::RBrace,
                 literal: String::from('}'),
             },
             Token {
@@ -365,7 +365,7 @@ if (5 < 10) {
                 literal: String::from("10"),
             },
             Token {
-                r#type: TokenType::EQ,
+                r#type: TokenType::Eq,
                 literal: String::from("=="),
             },
             Token {
@@ -373,7 +373,7 @@ if (5 < 10) {
                 literal: String::from("10"),
             },
             Token {
-                r#type: TokenType::SEMICOLON,
+                r#type: TokenType::Semicolon,
                 literal: String::from(';'),
             },
             Token {
@@ -389,7 +389,7 @@ if (5 < 10) {
                 literal: String::from("9"),
             },
             Token {
-                r#type: TokenType::SEMICOLON,
+                r#type: TokenType::Semicolon,
                 literal: String::from(';'),
             },
             Token {

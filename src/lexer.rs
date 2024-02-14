@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::token::{Token, TokenType};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Lexer {
     input: Vec<char>,
     position: usize,
@@ -43,18 +43,18 @@ impl Lexer {
 
     fn loop_up_ident(&self, ident: &str) -> TokenType {
         let mut keywords: HashMap<String, TokenType> = HashMap::new();
-        keywords.insert(String::from("fn"), TokenType::FUNCTION);
-        keywords.insert(String::from("let"), TokenType::LET);
-        keywords.insert(String::from("true"), TokenType::TRUE);
-        keywords.insert(String::from("false"), TokenType::FALSE);
-        keywords.insert(String::from("if"), TokenType::IF);
-        keywords.insert(String::from("else"), TokenType::ELSE);
-        keywords.insert(String::from("return"), TokenType::RETURN);
+        keywords.insert(String::from("fn"), TokenType::Function);
+        keywords.insert(String::from("let"), TokenType::Let);
+        keywords.insert(String::from("true"), TokenType::True);
+        keywords.insert(String::from("false"), TokenType::False);
+        keywords.insert(String::from("if"), TokenType::If);
+        keywords.insert(String::from("else"), TokenType::Else);
+        keywords.insert(String::from("return"), TokenType::Return);
 
         if let Some(token_type) = keywords.get(ident) {
             return token_type.clone();
         }
-        TokenType::IDENT
+        TokenType::Ident
     }
 
     fn eat_whitespace(&mut self) {
@@ -85,19 +85,19 @@ impl Lexer {
                 if self.peek_char() == '=' {
                     let ch = self.char;
                     self.read_char();
-                    Token::build(TokenType::EQ, &(String::from(ch) + &self.char.to_string()))
+                    Token::build(TokenType::Eq, &(String::from(ch) + &self.char.to_string()))
                 } else {
-                    Token::build(TokenType::ASSIGN, &self.char.to_string())
+                    Token::build(TokenType::Assign, &self.char.to_string())
                 }
             }
-            ';' => Token::build(TokenType::SEMICOLON, &self.char.to_string()),
-            '(' => Token::build(TokenType::LPAREN, &self.char.to_string()),
-            ')' => Token::build(TokenType::RPAREN, &self.char.to_string()),
-            ',' => Token::build(TokenType::COMMA, &self.char.to_string()),
-            '+' => Token::build(TokenType::PLUS, &self.char.to_string()),
-            '{' => Token::build(TokenType::LBRACE, &self.char.to_string()),
-            '}' => Token::build(TokenType::RBRACE, &self.char.to_string()),
-            '-' => Token::build(TokenType::MINUS, &self.char.to_string()),
+            ';' => Token::build(TokenType::Semicolon, &self.char.to_string()),
+            '(' => Token::build(TokenType::LParen, &self.char.to_string()),
+            ')' => Token::build(TokenType::RParen, &self.char.to_string()),
+            ',' => Token::build(TokenType::Comma, &self.char.to_string()),
+            '+' => Token::build(TokenType::Plus, &self.char.to_string()),
+            '{' => Token::build(TokenType::LBrace, &self.char.to_string()),
+            '}' => Token::build(TokenType::RBrace, &self.char.to_string()),
+            '-' => Token::build(TokenType::Minus, &self.char.to_string()),
             '!' => {
                 if self.peek_char() == '=' {
                     let ch = self.char;
@@ -107,11 +107,11 @@ impl Lexer {
                         &(String::from(ch) + &self.char.to_string()),
                     )
                 } else {
-                    Token::build(TokenType::BANG, &self.char.to_string())
+                    Token::build(TokenType::Bang, &self.char.to_string())
                 }
             }
-            '*' => Token::build(TokenType::ASTERISK, &self.char.to_string()),
-            '/' => Token::build(TokenType::SLASH, &self.char.to_string()),
+            '*' => Token::build(TokenType::Asterisk, &self.char.to_string()),
+            '/' => Token::build(TokenType::Slash, &self.char.to_string()),
             '<' => Token::build(TokenType::LT, &self.char.to_string()),
             '>' => Token::build(TokenType::GT, &self.char.to_string()),
             '\0' => Token::build(TokenType::EOF, ""),
@@ -122,7 +122,7 @@ impl Lexer {
                 } else if self.char.is_ascii_digit() {
                     return Token::build(TokenType::INT, &self.read_number());
                 } else {
-                    Token::build(TokenType::ILLEGAL, &self.char.to_string())
+                    Token::build(TokenType::Illegal, &self.char.to_string())
                 }
             }
         };
