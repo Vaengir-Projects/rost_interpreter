@@ -21,7 +21,7 @@ fn main() {
             break;
         }
 
-        let mut lexer = Lexer::new(&input);
+        let mut lexer = Lexer::new(input);
         let mut token = lexer.next_token();
         println!("---------------------------------------");
         while token.r#type != TokenType::EOF {
@@ -29,6 +29,6 @@ fn main() {
             println!("---------------------------------------");
             token = lexer.next_token();
         }
-        println!("");
+        println!(" ");
     }
 }
