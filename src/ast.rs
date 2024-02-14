@@ -29,12 +29,14 @@ impl NodeTrait for Program {
 #[derive(Debug)]
 pub enum Statement {
     Let(LetStatement),
+    Return(ReturnStatement),
 }
 
 impl NodeTrait for Statement {
     fn token_literal(&self) -> String {
         match self {
             Statement::Let(ls) => ls.token_literal(),
+            Statement::Return(rs) => rs.token_literal(),
         }
     }
 }
@@ -59,6 +61,22 @@ impl NodeTrait for LetStatement {
 }
 
 impl StatementTrait for LetStatement {
+    fn statement_node() {}
+}
+
+#[derive(Debug)]
+pub struct ReturnStatement {
+    pub token: Token,
+    pub return_value: Expression,
+}
+
+impl NodeTrait for ReturnStatement {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+}
+
+impl StatementTrait for ReturnStatement {
     fn statement_node() {}
 }
 

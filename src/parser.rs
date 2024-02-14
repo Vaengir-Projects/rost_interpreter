@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expression, Identifier, LetStatement, Program, Statement},
+    ast::{Expression, Identifier, LetStatement, Program, ReturnStatement, Statement},
     lexer::Lexer,
     token::{Token, TokenType},
 };
@@ -45,6 +45,7 @@ impl Parser {
     fn parse_statement(&mut self) -> Statement {
         match self.cur_token.r#type {
             TokenType::Let => Statement::Let(self.parse_let_statement()),
+            TokenType::Return => Statement::Return(self.parse_return_statement()),
             _ => panic!("Not a valid statement."),
         }
     }
@@ -69,6 +70,7 @@ impl Parser {
                 self.peek_token.r#type
             );
         }
+        // TODO: We're skipping the expressions until we encounter a semicolon
         while !self.cur_token_is(TokenType::Semicolon) {
             self.next_token();
         }
@@ -76,6 +78,19 @@ impl Parser {
             token,
             name,
             value: Expression::Default,
+        }
+    }
+
+    fn parse_return_statement(&mut self) -> ReturnStatement {
+        let token = self.cur_token.clone();
+        self.next_token();
+        // TODO: We're skipping the expressions until we encounter a semicolon
+        while !self.cur_token_is(TokenType::Semicolon) {
+            self.next_token();
+        }
+        ReturnStatement {
+            token,
+            return_value: Expression::Default,
         }
     }
 
