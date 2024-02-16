@@ -148,7 +148,7 @@ impl Parser {
         };
         let mut left_expression = prefix.clone();
         while !self.peek_token_is(TokenType::Semicolon) && precedence < self.peek_precedence() {
-            let infix = match &self.cur_token.r#type {
+            let infix = match &self.peek_token.r#type {
                 TokenType::Plus
                 | TokenType::Minus
                 | TokenType::Slash
