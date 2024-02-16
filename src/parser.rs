@@ -199,6 +199,7 @@ impl Parser {
     }
 
     fn parse_infix_expression(&mut self, left: Expression) -> Expression {
+        self.next_token();
         let token = self.cur_token.clone();
         let operator = self.cur_token.literal.clone();
         let left = Box::new(left);
