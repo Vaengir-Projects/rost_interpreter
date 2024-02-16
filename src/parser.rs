@@ -140,6 +140,7 @@ impl Parser {
         let prefix = match &self.cur_token.r#type {
             TokenType::Ident => self.parse_identifier(),
             TokenType::INT => self.parse_integer_literal(),
+            TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),
             _ => panic!(
                 "The TokenType: {:?} has no function (yet)",
                 self.cur_token.r#type
@@ -148,7 +149,6 @@ impl Parser {
         let mut left_expression = prefix.clone();
         while !self.peek_token_is(TokenType::Semicolon) && precedence < self.peek_precedence() {
             let infix = match &self.cur_token.r#type {
-                TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),
                 TokenType::Plus
                 | TokenType::Minus
                 | TokenType::Slash
