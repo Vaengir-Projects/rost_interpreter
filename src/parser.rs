@@ -142,7 +142,7 @@ impl Parser {
             TokenType::INT => self.parse_integer_literal(),
             TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),
             _ => panic!(
-                "The TokenType: {:?} has no function (yet)",
+                "Prefix: The TokenType: {:?} has no function (yet)",
                 self.cur_token.r#type
             ),
         };
@@ -158,7 +158,7 @@ impl Parser {
                 | TokenType::LT
                 | TokenType::GT => self.parse_infix_expression(prefix.clone()),
                 _ => panic!(
-                    "The TokenType: {:?} has no function (yet)",
+                    "Infix: The TokenType: {:?} has no function (yet)",
                     self.cur_token.r#type
                 ),
             };
