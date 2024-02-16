@@ -156,7 +156,7 @@ impl Parser {
                 | TokenType::Eq
                 | TokenType::NotEq
                 | TokenType::LT
-                | TokenType::GT => self.parse_infix_expression(prefix.clone()),
+                | TokenType::GT => self.parse_infix_expression(left_expression.clone()),
                 _ => panic!(
                     "Infix: The TokenType: {:?} has no function (yet)",
                     self.cur_token.r#type

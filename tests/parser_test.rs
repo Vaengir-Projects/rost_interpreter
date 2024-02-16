@@ -311,6 +311,72 @@ return 993322;";
         }
     }
 
+    #[test]
+    fn test_operator_precedence_parsing() {
+        struct Test {
+            input: String,
+            expected: String,
+        }
+        let tests: Vec<Test> = vec![
+            Test {
+                input: String::from("-a * b"),
+                expected: String::from("((-a) * b)"),
+            },
+            Test {
+                input: String::from("!-a"),
+                expected: String::from("(!(-a))"),
+            },
+            Test {
+                input: String::from("a + b + c"),
+                expected: String::from("((a + b) + c)"),
+            },
+            Test {
+                input: String::from("a + b - c"),
+                expected: String::from("((a + b) - c)"),
+            },
+            Test {
+                input: String::from("a * b * c"),
+                expected: String::from("((a * b) * c)"),
+            },
+            Test {
+                input: String::from("a * b / c"),
+                expected: String::from("((a * b) / c)"),
+            },
+            Test {
+                input: String::from("a + b / c"),
+                expected: String::from("(a + (b / c))"),
+            },
+            Test {
+                input: String::from("a + b * c + d / e - f"),
+                expected: String::from("(((a + (b * c)) + (d / e)) - f)"),
+            },
+            Test {
+                input: String::from("3 + 4; -5 * 5"),
+                expected: String::from("(3 + 4)((-5) * 5)"),
+            },
+            Test {
+                input: String::from("5 > 4 == 3 < 4"),
+                expected: String::from("((5 > 4) == (3 < 4))"),
+            },
+            Test {
+                input: String::from("5 < 4 != 3 > 4"),
+                expected: String::from("((5 < 4) != (3 > 4))"),
+            },
+            Test {
+                input: String::from("3 + 4 * 5 == 3 * 1 + 4 * 5"),
+                expected: String::from("((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"),
+            },
+        ];
+
+        for test in tests {
+            let lexer = Lexer::new(&test.input);
+            let mut parser = Parser::new(lexer);
+            let program = parser.parse_program();
+            dbg!(&program);
+            assert_eq!(format!("{}", program), test.expected);
+        }
+    }
+
     fn test_integer_literal(integer_literal: Expression, value: i64) -> bool {
         let int = match &integer_literal {
             Expression::IntegerLiteral(i) => i,
