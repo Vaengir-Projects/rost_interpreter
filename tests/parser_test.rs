@@ -366,6 +366,22 @@ return 993322;";
                 input: String::from("3 + 4 * 5 == 3 * 1 + 4 * 5"),
                 expected: String::from("((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"),
             },
+            Test {
+                input: String::from("true"),
+                expected: String::from("true"),
+            },
+            Test {
+                input: String::from("false"),
+                expected: String::from("false"),
+            },
+            Test {
+                input: String::from("3 > 5 == false"),
+                expected: String::from("((3 > 5) == false)"),
+            },
+            Test {
+                input: String::from("3 < 5 == true"),
+                expected: String::from("((3 < 5) == true)"),
+            },
         ];
 
         for test in tests {
@@ -389,5 +405,51 @@ return 993322;";
             return false;
         }
         true
+    }
+
+    #[test]
+    fn test_boolean_expression() {
+        struct Test {
+            input: String,
+            expected: bool,
+        }
+        let tests: Vec<Test> = vec![
+            Test {
+                input: String::from("true;"),
+                expected: true,
+            },
+            Test {
+                input: String::from("false;"),
+                expected: false,
+            },
+        ];
+
+        for test in tests {
+            let lexer = Lexer::new(&test.input);
+            let mut parser = Parser::new(lexer);
+            let program = parser.parse_program();
+            dbg!(&program);
+            if program.statements.len() != 1 {
+                panic!(
+                    "Program.Statements doesn't contain 1 statement. Got: {}",
+                    program
+                );
+            }
+            let bool_expression = match &program.statements[0] {
+                Statement::Expression(b) => b,
+                e => panic!(
+                    "Not the right kind of Statement. Expected: Statement::Expression\nGot: {}",
+                    e
+                ),
+            };
+            let bool = match &bool_expression.expression {
+                Expression::Boolean(b) => b,
+                e => panic!(
+                    "Not the right kind of Expression. Expected: Expression::Boolean\nGot: {}",
+                    e
+                ),
+            };
+            assert_eq!(bool.value, test.expected);
+        }
     }
 }

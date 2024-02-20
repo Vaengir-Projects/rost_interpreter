@@ -1,7 +1,7 @@
 use crate::{
     ast::{
-        Expression, ExpressionStatement, Identifier, InfixExpression, IntegerLiteral, LetStatement,
-        PrefixExpression, Program, ReturnStatement, Statement,
+        Boolean, Expression, ExpressionStatement, Identifier, InfixExpression, IntegerLiteral,
+        LetStatement, PrefixExpression, Program, ReturnStatement, Statement,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -141,6 +141,7 @@ impl Parser {
             TokenType::Ident => self.parse_identifier(),
             TokenType::INT => self.parse_integer_literal(),
             TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),
+            TokenType::True | TokenType::False => self.parse_boolean(),
             _ => panic!(
                 "Prefix: The TokenType: {:?} has no function (yet)",
                 self.cur_token.r#type
@@ -211,6 +212,13 @@ impl Parser {
             left,
             operator,
             right,
+        })
+    }
+
+    fn parse_boolean(&mut self) -> Expression {
+        Expression::Boolean(Boolean {
+            token: self.cur_token.clone(),
+            value: self.cur_token_is(TokenType::True),
         })
     }
 
