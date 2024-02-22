@@ -382,6 +382,26 @@ return 993322;";
                 input: String::from("3 < 5 == true"),
                 expected: String::from("((3 < 5) == true)"),
             },
+            Test {
+                input: String::from("1 + (2 + 3) + 4"),
+                expected: String::from("((1 + (2 + 3)) + 4)"),
+            },
+            Test {
+                input: String::from("(5 + 5) * 2"),
+                expected: String::from("((5 + 5) * 2)"),
+            },
+            Test {
+                input: String::from("2 / (5 + 5)"),
+                expected: String::from("(2 / (5 + 5))"),
+            },
+            Test {
+                input: String::from("-(5 + 5)"),
+                expected: String::from("(-(5 + 5))"),
+            },
+            Test {
+                input: String::from("!(true == true)"),
+                expected: String::from("(!(true == true))"),
+            },
         ];
 
         for test in tests {

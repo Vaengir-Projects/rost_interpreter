@@ -142,6 +142,7 @@ impl Parser {
             TokenType::INT => self.parse_integer_literal(),
             TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),
             TokenType::True | TokenType::False => self.parse_boolean(),
+            TokenType::LParen => self.parse_grouped_expression(),
             _ => panic!(
                 "Prefix: The TokenType: {:?} has no function (yet)",
                 self.cur_token.r#type
@@ -220,6 +221,15 @@ impl Parser {
             token: self.cur_token.clone(),
             value: self.cur_token_is(TokenType::True),
         })
+    }
+
+    fn parse_grouped_expression(&mut self) -> Expression {
+        self.next_token();
+        let expression = self.parse_expression(LOWEST);
+        if !self.expect_peek(TokenType::RParen) {
+            panic!("Can't match parens");
+        }
+        expression
     }
 
     pub fn parse_program(&mut self) -> Program {
