@@ -472,4 +472,149 @@ return 993322;";
             assert_eq!(bool.value, test.expected);
         }
     }
+
+    #[test]
+    fn test_if_expression() {
+        let input = "if (x < y) { x }";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program();
+        dbg!(&program);
+        if program.statements.len() != 1 {
+            panic!(
+                "Program.Statements doesn't contain 1 statement. Got: {}",
+                program
+            );
+        };
+        let if_expression = match &program.statements[0] {
+            Statement::Expression(i) => i,
+            e => panic!(
+                "Not the right kind of Statement. Expected: Statement::Expression\nGot: {}",
+                e
+            ),
+        };
+        let if_expression = match &if_expression.expression {
+            Expression::IfExpression(i) => i,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::IfExpression\nGot: {}",
+                e
+            ),
+        };
+        let condition = match *if_expression.condition.clone() {
+            Expression::InfixExpression(i) => i,
+            e => panic!("The condition isn't an InfixExpression\nGot: {}", e),
+        };
+        let con_left = match *condition.left {
+            Expression::Identifier(i) => i,
+            e => panic!("Not an Identifier\nGot: {}", e),
+        };
+        let con_right = match *condition.right {
+            Expression::Identifier(i) => i,
+            e => panic!("Not an Identifier\nGot: {}", e),
+        };
+        assert_eq!(con_left.value, String::from("x"));
+        assert_eq!(condition.operator, String::from("<"));
+        assert_eq!(con_right.value, String::from("y"));
+        if if_expression.consequence.statements.len() != 1 {
+            panic!("Consequence should only be one statement");
+        }
+        let statement = match if_expression.consequence.statements[0].clone() {
+            Statement::Expression(e) => e,
+            e => panic!("Expected a Statement::Expression\nGot: {}", e),
+        };
+        let statement = match statement.expression {
+            Expression::Identifier(i) => i,
+            e => panic!("Not an Identifier\nGot: {}", e),
+        };
+        assert_eq!(statement.value, String::from("x"));
+        match if_expression.alternative {
+            None => (),
+            _ => panic!("The alternative statements where not None"),
+        }
+    }
+
+    #[test]
+    fn test_if_else_expression() {
+        let input = "if (x < y) { x } else { y }";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program();
+        dbg!(&program);
+        if program.statements.len() != 1 {
+            panic!(
+                "Program.Statements doesn't contain 1 statement. Got: {}",
+                program
+            );
+        };
+        let if_expression = match &program.statements[0] {
+            Statement::Expression(i) => i,
+            e => panic!(
+                "Not the right kind of Statement. Expected: Statement::Expression\nGot: {}",
+                e
+            ),
+        };
+        let if_expression = match &if_expression.expression {
+            Expression::IfExpression(i) => i,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::IfExpression\nGot: {}",
+                e
+            ),
+        };
+        let _condition = match *if_expression.condition.clone() {
+            Expression::InfixExpression(i) => i,
+            e => panic!("The condition isn't an InfixExpression\nGot: {}", e),
+        };
+        let condition = match *if_expression.condition.clone() {
+            Expression::InfixExpression(i) => i,
+            e => panic!("The condition isn't an InfixExpression\nGot: {}", e),
+        };
+        let con_left = match *condition.left {
+            Expression::Identifier(i) => i,
+            e => panic!("Not an Identifier\nGot: {}", e),
+        };
+        let con_right = match *condition.right {
+            Expression::Identifier(i) => i,
+            e => panic!("Not an Identifier\nGot: {}", e),
+        };
+        assert_eq!(con_left.value, String::from("x"));
+        assert_eq!(condition.operator, String::from("<"));
+        assert_eq!(con_right.value, String::from("y"));
+        if if_expression.consequence.statements.len() != 1 {
+            panic!("Consequence should only be one statement");
+        }
+        let statement = match if_expression.consequence.statements[0].clone() {
+            Statement::Expression(e) => e,
+            e => panic!("Expected a Statement::Expression\nGot: {}", e),
+        };
+        let statement = match statement.expression {
+            Expression::Identifier(i) => i,
+            e => panic!("Not an Identifier\nGot: {}", e),
+        };
+        assert_eq!(statement.value, String::from("x"));
+        let else_block = match &if_expression.alternative {
+            Some(e) => e,
+            None => panic!("Alternative statements are None"),
+        };
+        if else_block.statements.len() != 1 {
+            panic!(
+                "Else_block.statements doesn't contain 1 statement. Got: {}",
+                else_block
+            );
+        };
+        let else_statement = match &else_block.statements[0] {
+            Statement::Expression(e) => e,
+            e => panic!(
+                "Not the right kind of Statement. Expected: Statement::Expression\nGot: {}",
+                e
+            ),
+        };
+        let else_statement = match &else_statement.expression {
+            Expression::Identifier(i) => i,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::IfExpression\nGot: {}",
+                e
+            ),
+        };
+        assert_eq!(else_statement.value, String::from("y"));
+    }
 }

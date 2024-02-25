@@ -1,7 +1,8 @@
 use crate::{
     ast::{
-        Boolean, Expression, ExpressionStatement, Identifier, InfixExpression, IntegerLiteral,
-        LetStatement, PrefixExpression, Program, ReturnStatement, Statement,
+        BlockStatement, Boolean, Expression, ExpressionStatement, Identifier, IfExpression,
+        InfixExpression, IntegerLiteral, LetStatement, PrefixExpression, Program, ReturnStatement,
+        Statement,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -13,7 +14,7 @@ const LESSGREATER: u8 = 3;
 const SUM: u8 = 4;
 const PRODUCT: u8 = 5;
 const PREFIX: u8 = 6;
-const CALL: u8 = 7;
+const _CALL: u8 = 7;
 
 pub struct Parser {
     lexer: Lexer,
@@ -143,6 +144,7 @@ impl Parser {
             TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),
             TokenType::True | TokenType::False => self.parse_boolean(),
             TokenType::LParen => self.parse_grouped_expression(),
+            TokenType::If => self.parse_if_expression(),
             _ => panic!(
                 "Prefix: The TokenType: {:?} has no function (yet)",
                 self.cur_token.r#type
@@ -230,6 +232,45 @@ impl Parser {
             panic!("Can't match parens");
         }
         expression
+    }
+
+    fn parse_if_expression(&mut self) -> Expression {
+        let token = self.cur_token.clone();
+        if !self.expect_peek(TokenType::LParen) {
+            panic!("Next TokenType should be 'LParen'");
+        }
+        self.next_token();
+        let condition = Box::new(self.parse_expression(LOWEST));
+        if !self.expect_peek(TokenType::RParen) || !self.expect_peek(TokenType::LBrace) {
+            panic!("Next TokenTypes should be 'RParen' and then 'LBrace'");
+        }
+        let consequence = self.parse_block_statement();
+        let mut if_expression = IfExpression {
+            token,
+            condition,
+            consequence,
+            alternative: None,
+        };
+        if self.peek_token_is(TokenType::Else) {
+            self.next_token();
+            if !self.expect_peek(TokenType::LBrace) {
+                panic!("Next Tokentype should be 'LBrace'");
+            }
+            if_expression.alternative = Some(self.parse_block_statement());
+        }
+        Expression::IfExpression(if_expression)
+    }
+
+    fn parse_block_statement(&mut self) -> BlockStatement {
+        let token = self.cur_token.clone();
+        let mut statements = Vec::new();
+        self.next_token();
+        while !self.cur_token_is(TokenType::RBrace) && !self.cur_token_is(TokenType::EOF) {
+            let statement = self.parse_statement();
+            statements.push(statement);
+            self.next_token();
+        }
+        BlockStatement { token, statements }
     }
 
     pub fn parse_program(&mut self) -> Program {
