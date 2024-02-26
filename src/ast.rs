@@ -1,6 +1,5 @@
-use std::fmt::{Debug, Display};
-
 use crate::token::Token;
+use std::fmt::{Debug, Display};
 
 pub trait NodeTrait {
     fn token_literal(&self) -> String;
@@ -73,6 +72,7 @@ pub enum Expression {
     Boolean(Boolean),
     IfExpression(IfExpression),
     FunctionLiteral(FunctionLiteral),
+    CallExpression(CallExpression),
     Default,
 }
 
@@ -86,6 +86,7 @@ impl Display for Expression {
             Expression::Boolean(b) => write!(f, "{}", b),
             Expression::IfExpression(i) => write!(f, "{}", i),
             Expression::FunctionLiteral(fl) => write!(f, "{}", fl),
+            Expression::CallExpression(c) => write!(f, "{}", c),
             _ => write!(f, "Default"),
         }
     }
@@ -358,6 +359,41 @@ impl Display for FunctionLiteral {
             .map(|p| p.value.to_string())
             .collect::<Vec<String>>()
             .join(", ");
-        write!(f, "Here: {}({}) {}", self.token_literal(), parameters, self.body)
+        write!(
+            f,
+            "Here: {}({}) {}",
+            self.token_literal(),
+            parameters,
+            self.body
+        )
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CallExpression {
+    pub token: Token,
+    pub function: Box<Expression>,
+    pub arguments: Vec<Expression>,
+}
+
+impl NodeTrait for CallExpression {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+}
+
+impl ExpressionTrait for CallExpression {
+    fn expression_node(&self) {}
+}
+
+impl Display for CallExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let arguments = self
+            .arguments
+            .iter()
+            .map(|p| p.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+        write!(f, "{}({})", self.token_literal(), arguments,)
     }
 }

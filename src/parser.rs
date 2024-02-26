@@ -1,8 +1,8 @@
 use crate::{
     ast::{
-        BlockStatement, Boolean, Expression, ExpressionStatement, FunctionLiteral, Identifier,
-        IfExpression, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression, Program,
-        ReturnStatement, Statement,
+        BlockStatement, Boolean, CallExpression, Expression, ExpressionStatement, FunctionLiteral,
+        Identifier, IfExpression, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression,
+        Program, ReturnStatement, Statement,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -14,7 +14,7 @@ const LESSGREATER: u8 = 3;
 const SUM: u8 = 4;
 const PRODUCT: u8 = 5;
 const PREFIX: u8 = 6;
-const _CALL: u8 = 7;
+const CALL: u8 = 7;
 
 pub struct Parser {
     lexer: Lexer,
@@ -64,6 +64,7 @@ impl Parser {
             TokenType::Minus => SUM,
             TokenType::Slash => PRODUCT,
             TokenType::Asterisk => PRODUCT,
+            TokenType::LParen => CALL,
             _ => LOWEST,
         }
     }
@@ -162,6 +163,7 @@ impl Parser {
                 | TokenType::NotEq
                 | TokenType::LT
                 | TokenType::GT => self.parse_infix_expression(left_expression.clone()),
+                TokenType::LParen => self.parse_call_expression(left_expression.clone()),
                 _ => panic!(
                     "Infix: The TokenType: {:?} has no function (yet)",
                     self.cur_token.r#type
@@ -311,9 +313,47 @@ impl Parser {
             });
         }
         if !self.expect_peek(TokenType::RParen) {
-            panic!("Next TokenType should be 'RParen'\nGot: {:?} - {:?}", self.cur_token, self.peek_token);
+            panic!(
+                "Next TokenType should be 'RParen'\nGot: {:?}",
+                self.cur_token
+            );
         }
         identifiers
+    }
+
+    fn parse_call_expression(&mut self, func: Expression) -> Expression {
+        let token = self.cur_token.clone();
+        let function = Box::new(func);
+        let arguments = self.parse_call_arguments();
+        Expression::CallExpression(CallExpression {
+            token,
+            function,
+            arguments,
+        })
+    }
+
+    fn parse_call_arguments(&mut self) -> Vec<Expression> {
+        self.next_token();
+        let mut args: Vec<Expression> = Vec::new();
+        if self.peek_token_is(TokenType::RParen) {
+            self.next_token();
+            return args;
+        }
+        self.next_token();
+        let arg = self.parse_expression(LOWEST);
+        args.push(arg);
+        while self.peek_token_is(TokenType::Comma) {
+            self.next_token();
+            self.next_token();
+            args.push(self.parse_expression(LOWEST));
+        }
+        if !self.expect_peek(TokenType::RParen) {
+            panic!(
+                "Next TokenType should be 'RParen'\nGot: Peek: {:?} - Cur: {:?}",
+                self.peek_token, self.cur_token
+            );
+        }
+        args
     }
 
     pub fn parse_program(&mut self) -> Program {

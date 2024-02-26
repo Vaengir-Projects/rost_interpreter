@@ -402,6 +402,18 @@ return 993322;";
                 input: String::from("!(true == true)"),
                 expected: String::from("(!(true == true))"),
             },
+            Test {
+                input: String::from("a + add(b * c) + d"),
+                expected: String::from("((a + add((b * c))) + d)"),
+            },
+            Test {
+                input: String::from("add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))"),
+                expected: String::from("add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"),
+            },
+            Test {
+                input: String::from("add(a + b + c * d / f + g)"),
+                expected: String::from("add((((a + b) + ((c * d) / f)) + g))"),
+            },
         ];
 
         for test in tests {
@@ -670,5 +682,104 @@ return 993322;";
             e => panic!("Not an Identifier\nGot: {}", e),
         };
         assert_eq!(body_right.value, "y");
+    }
+
+    #[test]
+    fn test_call_expression() {
+        let input = "add(1, 2 * 3, 4 + 5);";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program();
+        dbg!(&program);
+        if program.statements.len() != 1 {
+            panic!(
+                "Program.Statements doesn't contain 1 statement. Got: {}",
+                program
+            );
+        };
+        let call_expression = match &program.statements[0] {
+            Statement::Expression(i) => i,
+            e => panic!(
+                "Not the right kind of Statement. Expected: Statement::Expression\nGot: {}",
+                e
+            ),
+        };
+        let call_literal = match &call_expression.expression {
+            Expression::CallExpression(i) => i,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::CallExpression\nGot: {}",
+                e
+            ),
+        };
+        let call_function = match *call_literal.function.clone() {
+            Expression::Identifier(i) => i,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
+                e
+            ),
+        };
+        assert_eq!(call_function.value, "add");
+        if call_literal.arguments.len() != 3 {
+            panic!(
+                "Wrong length of arguments. Expected: 3\nGot: {}",
+                call_literal.arguments.len()
+            );
+        }
+        let first_arg = match &call_literal.arguments[0] {
+            Expression::IntegerLiteral(i) => i,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::IntegerLiteral\nGot: {}",
+                e
+            ),
+        };
+        assert_eq!(first_arg.value, 1);
+        let second_arg = match &call_literal.arguments[1] {
+            Expression::InfixExpression(i) => i,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::InfixExpression\nGot: {}",
+                e
+            ),
+        };
+        let second_left = match *second_arg.left.clone() {
+            Expression::IntegerLiteral(i) => i,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
+                e
+            ),
+        };
+        let second_right = match *second_arg.right.clone() {
+            Expression::IntegerLiteral(i) => i,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
+                e
+            ),
+        };
+        assert_eq!(second_left.value, 2);
+        assert_eq!(second_arg.operator, "*");
+        assert_eq!(second_right.value, 3);
+        let third_arg = match &call_literal.arguments[2] {
+            Expression::InfixExpression(i) => i,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::InfixExpression\nGot: {}",
+                e
+            ),
+        };
+        let third_left = match *third_arg.left.clone() {
+            Expression::IntegerLiteral(i) => i,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
+                e
+            ),
+        };
+        let third_right = match *third_arg.right.clone() {
+            Expression::IntegerLiteral(i) => i,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
+                e
+            ),
+        };
+        assert_eq!(third_left.value, 4);
+        assert_eq!(third_arg.operator, "+");
+        assert_eq!(third_right.value, 5);
     }
 }
