@@ -72,6 +72,7 @@ pub enum Expression {
     InfixExpression(InfixExpression),
     Boolean(Boolean),
     IfExpression(IfExpression),
+    FunctionLiteral(FunctionLiteral),
     Default,
 }
 
@@ -84,6 +85,7 @@ impl Display for Expression {
             Expression::InfixExpression(i) => write!(f, "{}", i),
             Expression::Boolean(b) => write!(f, "{}", b),
             Expression::IfExpression(i) => write!(f, "{}", i),
+            Expression::FunctionLiteral(fl) => write!(f, "{}", fl),
             _ => write!(f, "Default"),
         }
     }
@@ -328,5 +330,34 @@ impl Display for BlockStatement {
             write!(f, "{}", statement)?;
         }
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionLiteral {
+    pub token: Token,
+    pub parameters: Vec<Identifier>,
+    pub body: BlockStatement,
+}
+
+impl NodeTrait for FunctionLiteral {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+}
+
+impl ExpressionTrait for FunctionLiteral {
+    fn expression_node(&self) {}
+}
+
+impl Display for FunctionLiteral {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let parameters = self
+            .parameters
+            .iter()
+            .map(|p| p.value.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+        write!(f, "Here: {}({}) {}", self.token_literal(), parameters, self.body)
     }
 }

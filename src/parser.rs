@@ -1,8 +1,8 @@
 use crate::{
     ast::{
-        BlockStatement, Boolean, Expression, ExpressionStatement, Identifier, IfExpression,
-        InfixExpression, IntegerLiteral, LetStatement, PrefixExpression, Program, ReturnStatement,
-        Statement,
+        BlockStatement, Boolean, Expression, ExpressionStatement, FunctionLiteral, Identifier,
+        IfExpression, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression, Program,
+        ReturnStatement, Statement,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -145,6 +145,7 @@ impl Parser {
             TokenType::True | TokenType::False => self.parse_boolean(),
             TokenType::LParen => self.parse_grouped_expression(),
             TokenType::If => self.parse_if_expression(),
+            TokenType::Function => self.parse_function_literal(),
             _ => panic!(
                 "Prefix: The TokenType: {:?} has no function (yet)",
                 self.cur_token.r#type
@@ -271,6 +272,48 @@ impl Parser {
             self.next_token();
         }
         BlockStatement { token, statements }
+    }
+
+    fn parse_function_literal(&mut self) -> Expression {
+        let token = self.cur_token.clone();
+        if !self.expect_peek(TokenType::LParen) {
+            panic!("Next TokenType should be 'LParen'");
+        }
+        let parameters = self.parse_function_parameters();
+        if !self.expect_peek(TokenType::LBrace) {
+            panic!("Next TokenType should be 'LBrace'");
+        }
+        let body = self.parse_block_statement();
+        Expression::FunctionLiteral(FunctionLiteral {
+            token,
+            parameters,
+            body,
+        })
+    }
+
+    fn parse_function_parameters(&mut self) -> Vec<Identifier> {
+        let mut identifiers: Vec<Identifier> = Vec::new();
+        if self.peek_token_is(TokenType::RParen) {
+            self.next_token();
+            return identifiers;
+        }
+        self.next_token();
+        identifiers.push(Identifier {
+            token: self.cur_token.clone(),
+            value: self.cur_token.literal.clone(),
+        });
+        while self.peek_token_is(TokenType::Comma) {
+            self.next_token();
+            self.next_token();
+            identifiers.push(Identifier {
+                token: self.cur_token.clone(),
+                value: self.cur_token.literal.clone(),
+            });
+        }
+        if !self.expect_peek(TokenType::RParen) {
+            panic!("Next TokenType should be 'RParen'\nGot: {:?} - {:?}", self.cur_token, self.peek_token);
+        }
+        identifiers
     }
 
     pub fn parse_program(&mut self) -> Program {

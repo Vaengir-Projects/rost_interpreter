@@ -560,10 +560,6 @@ return 993322;";
                 e
             ),
         };
-        let _condition = match *if_expression.condition.clone() {
-            Expression::InfixExpression(i) => i,
-            e => panic!("The condition isn't an InfixExpression\nGot: {}", e),
-        };
         let condition = match *if_expression.condition.clone() {
             Expression::InfixExpression(i) => i,
             e => panic!("The condition isn't an InfixExpression\nGot: {}", e),
@@ -611,10 +607,68 @@ return 993322;";
         let else_statement = match &else_statement.expression {
             Expression::Identifier(i) => i,
             e => panic!(
-                "Not the right kind of Expression. Expected: Expression::IfExpression\nGot: {}",
+                "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
                 e
             ),
         };
         assert_eq!(else_statement.value, String::from("y"));
+    }
+
+    #[test]
+    fn test_function_literal() {
+        let input = "fn(x, y) { x + y; }";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program();
+        dbg!(&program);
+        if program.statements.len() != 1 {
+            panic!(
+                "Program.Statements doesn't contain 1 statement. Got: {}",
+                program
+            );
+        };
+        let function_expression = match &program.statements[0] {
+            Statement::Expression(i) => i,
+            e => panic!(
+                "Not the right kind of Statement. Expected: Statement::Expression\nGot: {}",
+                e
+            ),
+        };
+        let function_literal = match &function_expression.expression {
+            Expression::FunctionLiteral(f) => f,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::FunctionLiteral\nGot: {}",
+                e
+            ),
+        };
+        if function_literal.parameters.len() != 2 {
+            panic!(
+                "FunctionLiteral.parameters doesn't contain 2 parameters. Got: {}",
+                program
+            );
+        }
+        println!("{}", function_literal);
+        assert_eq!(function_literal.parameters[0].value, String::from("x"));
+        assert_eq!(function_literal.parameters[1].value, String::from("y"));
+        dbg!(&function_literal.body);
+        let statement = match function_literal.body.statements[0].clone() {
+            Statement::Expression(e) => e,
+            e => panic!("Expected a Statement::Expression\nGot: {}", e),
+        };
+        let body = match statement.expression {
+            Expression::InfixExpression(i) => i,
+            e => panic!("The condition isn't an InfixExpression\nGot: {}", e),
+        };
+        let body_left = match *body.left {
+            Expression::Identifier(i) => i,
+            e => panic!("Not an Identifier\nGot: {}", e),
+        };
+        assert_eq!(body_left.value, "x");
+        assert_eq!(body.operator, "+");
+        let body_right = match *body.right {
+            Expression::Identifier(i) => i,
+            e => panic!("Not an Identifier\nGot: {}", e),
+        };
+        assert_eq!(body_right.value, "y");
     }
 }
