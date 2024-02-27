@@ -40,7 +40,7 @@ mod tests {
         for test in tests {
             let lexer = Lexer::new(&test.input);
             let mut parser = Parser::new(lexer);
-            let program: Program = parser.parse_program();
+            let program: Program = parser.parse_program().unwrap();
             if program.statements.len() != 1 {
                 panic!(
                     "Program.Statements doesn't contain 1 statements. Got: {}",
@@ -122,7 +122,7 @@ mod tests {
         for test in tests {
             let lexer = Lexer::new(&test.input);
             let mut parser = Parser::new(lexer);
-            let program = parser.parse_program();
+            let program = parser.parse_program().unwrap();
             if program.statements.len() != 1 {
                 panic!(
                     "Program.Statements doesn't contain 1 statements. Got: {}",
@@ -176,7 +176,7 @@ mod tests {
         let input = "foobar;";
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
-        let program = parser.parse_program();
+        let program = parser.parse_program().unwrap();
         if program.statements.len() != 1 {
             panic!(
                 "Program.Statements doesn't contain 1 statement. Got: {}",
@@ -206,7 +206,7 @@ mod tests {
         let input = "5;";
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
-        let program = parser.parse_program();
+        let program = parser.parse_program().unwrap();
         if program.statements.len() != 1 {
             panic!(
                 "Program.Statements doesn't contain 1 statement. Got: {}",
@@ -256,7 +256,7 @@ mod tests {
         for prefix_test in prefix_tests {
             let lexer = Lexer::new(&prefix_test.input);
             let mut parser = Parser::new(lexer);
-            let program = parser.parse_program();
+            let program = parser.parse_program().unwrap();
             if program.statements.len() != 1 {
                 panic!(
                     "Program.Statements doesn't contain 1 statement. Got: {}",
@@ -350,7 +350,7 @@ mod tests {
         for infix_test in infix_tests {
             let lexer = Lexer::new(&infix_test.input);
             let mut parser = Parser::new(lexer);
-            let program = parser.parse_program();
+            let program = parser.parse_program().unwrap();
             if program.statements.len() != 1 {
                 panic!(
                     "Program.Statements doesn't contain 1 statement. Got: {}",
@@ -492,7 +492,7 @@ mod tests {
         for test in tests {
             let lexer = Lexer::new(&test.input);
             let mut parser = Parser::new(lexer);
-            let program = parser.parse_program();
+            let program = parser.parse_program().unwrap();
             dbg!(&program);
             assert_eq!(format!("{}", program), test.expected);
         }
@@ -532,7 +532,7 @@ mod tests {
         for test in tests {
             let lexer = Lexer::new(&test.input);
             let mut parser = Parser::new(lexer);
-            let program = parser.parse_program();
+            let program = parser.parse_program().unwrap();
             dbg!(&program);
             if program.statements.len() != 1 {
                 panic!(
@@ -563,7 +563,7 @@ mod tests {
         let input = "if (x < y) { x }";
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
-        let program = parser.parse_program();
+        let program = parser.parse_program().unwrap();
         dbg!(&program);
         if program.statements.len() != 1 {
             panic!(
@@ -623,7 +623,7 @@ mod tests {
         let input = "if (x < y) { x } else { y }";
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
-        let program = parser.parse_program();
+        let program = parser.parse_program().unwrap();
         dbg!(&program);
         if program.statements.len() != 1 {
             panic!(
@@ -704,7 +704,7 @@ mod tests {
         let input = "fn(x, y) { x + y; }";
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
-        let program = parser.parse_program();
+        let program = parser.parse_program().unwrap();
         dbg!(&program);
         if program.statements.len() != 1 {
             panic!(
@@ -762,7 +762,7 @@ mod tests {
         let input = "add(1, 2 * 3, 4 + 5);";
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
-        let program = parser.parse_program();
+        let program = parser.parse_program().unwrap();
         dbg!(&program);
         if program.statements.len() != 1 {
             panic!(
