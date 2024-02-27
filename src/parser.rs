@@ -105,27 +105,24 @@ impl Parser {
                 self.peek_token.r#type
             );
         }
-        // TODO: We're skipping the expressions until we encounter a semicolon
-        while !self.cur_token_is(TokenType::Semicolon) {
+        self.next_token();
+        let value = self.parse_expression(LOWEST);
+        if self.peek_token_is(TokenType::Semicolon) {
             self.next_token();
         }
-        LetStatement {
-            token,
-            name,
-            value: Expression::Default,
-        }
+        LetStatement { token, name, value }
     }
 
     fn parse_return_statement(&mut self) -> ReturnStatement {
         let token = self.cur_token.clone();
         self.next_token();
-        // TODO: We're skipping the expressions until we encounter a semicolon
-        while !self.cur_token_is(TokenType::Semicolon) {
+        let return_value = self.parse_expression(LOWEST);
+        if self.peek_token_is(TokenType::Semicolon) {
             self.next_token();
         }
         ReturnStatement {
             token,
-            return_value: Expression::Default,
+            return_value,
         }
     }
 

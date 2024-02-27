@@ -8,92 +8,165 @@ mod tests {
 
     #[test]
     fn test_let_statements() {
-        let input: &str = "\
-let x = 5;
-let y = 10;
-let foobar = 838383;";
-
-        let expected_identifiers: Vec<String> =
-            vec![String::from("x"), String::from("y"), String::from("foobar")];
-
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
-        let program: Program = parser.parse_program();
-        if program.statements.len() != 3 {
-            panic!(
-                "Program.Statements doesn't contain 3 statements. Got: {}",
-                program
-            );
+        #[derive(Debug)]
+        enum Used {
+            Int(i64),
+            Bool(bool),
+            String(String),
         }
-        for (i, ident) in expected_identifiers.iter().enumerate() {
-            let statement = &program.statements[i];
-            if !test_let_statement(statement, ident) {
-                break;
+        #[derive(Debug)]
+        struct Test {
+            input: String,
+            expected_identifier: String,
+            expected_value: Used,
+        }
+        let tests: Vec<Test> = vec![
+            Test {
+                input: String::from("let x = 5;"),
+                expected_identifier: String::from("x"),
+                expected_value: Used::Int(5),
+            },
+            Test {
+                input: String::from("let y = true;"),
+                expected_identifier: String::from("y"),
+                expected_value: Used::Bool(true),
+            },
+            Test {
+                input: String::from("let foobar = y;"),
+                expected_identifier: String::from("foobar"),
+                expected_value: Used::String(String::from("y")),
+            },
+        ];
+        for test in tests {
+            let lexer = Lexer::new(&test.input);
+            let mut parser = Parser::new(lexer);
+            let program: Program = parser.parse_program();
+            if program.statements.len() != 1 {
+                panic!(
+                    "Program.Statements doesn't contain 1 statements. Got: {}",
+                    program
+                );
+            }
+            let statement = match &program.statements[0] {
+                Statement::Let(l) => l,
+                e => panic!(
+                    "Not the right kind of Statement. Expected: Statement::Let\nGot: {}",
+                    e
+                ),
+            };
+            assert_eq!(statement.name.value, test.expected_identifier);
+            assert_eq!(statement.name.token_literal(), test.expected_identifier);
+            dbg!(&statement.value);
+            match test.expected_value {
+                Used::Int(i) => {
+                    let return_value = match &statement.value {
+                        Expression::IntegerLiteral(i) => i,
+                        e => panic!(
+                            "Not the right kind of Expression. Expected: Expression::IntegerLiteral\nGot: {}",
+                            e
+                        ),
+                    };
+                    assert_eq!(return_value.value, i)
+                }
+                Used::Bool(b) => {
+                    let return_value = match &statement.value {
+                        Expression::Boolean(b) => b,
+                        e => panic!(
+                            "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
+                            e
+                        ),
+                    };
+                    assert_eq!(return_value.value, b)
+                }
+                Used::String(s) => {
+                    let return_value = match &statement.value {
+                        Expression::Identifier(i) => i,
+                        e => panic!(
+                            "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
+                            e
+                        ),
+                    };
+                    assert_eq!(return_value.value, s)
+                }
             }
         }
     }
 
-    fn test_let_statement(statement: &Statement, name: &str) -> bool {
-        if statement.token_literal() != "let" {
-            panic!(
-                "statement.token_literal not 'let'. Got {}",
-                statement.token_literal()
-            );
-        }
-
-        let let_statement = match statement {
-            Statement::Let(let_statement) => let_statement,
-            e => panic!(
-                "Not the right kind of Statement. Expected: Statement::Let\nGot: {}",
-                e
-            ),
-        };
-
-        if let_statement.name.value != name {
-            panic!(
-                "Expected name value doesn't match:\nExpected: {}\nGot: {}",
-                let_statement.name.value, name
-            );
-        }
-        if let_statement.name.token_literal() != name {
-            panic!(
-                "Expected name value doesn't match:\nExpected: {}\nGot: {}",
-                let_statement.name.token_literal(),
-                name
-            );
-        }
-        true
-    }
-
     #[test]
     fn test_return_statement() {
-        let input: &str = "\
-return 5;
-return 10;
-return 993322;";
-
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
-        let program = parser.parse_program();
-        if program.statements.len() != 3 {
-            panic!(
-                "Program.Statements doesn't contain 3 statements. Got: {}",
-                program
-            );
+        #[derive(Debug)]
+        enum Used {
+            Int(i64),
+            Bool(bool),
+            String(String),
         }
-        for statement in program.statements {
-            let return_statement = match statement {
-                Statement::Return(return_statement) => return_statement,
+        #[derive(Debug)]
+        struct Test {
+            input: String,
+            expected_value: Used,
+        }
+        let tests: Vec<Test> = vec![
+            Test {
+                input: String::from("return 5;"),
+                expected_value: Used::Int(5),
+            },
+            Test {
+                input: String::from("return true;"),
+                expected_value: Used::Bool(true),
+            },
+            Test {
+                input: String::from("return foobar;"),
+                expected_value: Used::String(String::from("foobar")),
+            },
+        ];
+        for test in tests {
+            let lexer = Lexer::new(&test.input);
+            let mut parser = Parser::new(lexer);
+            let program = parser.parse_program();
+            if program.statements.len() != 1 {
+                panic!(
+                    "Program.Statements doesn't contain 1 statements. Got: {}",
+                    program
+                );
+            }
+            let return_statement = match &program.statements[0] {
+                Statement::Return(r) => r,
                 e => panic!(
                     "Not the right kind of Statement. Expected: Statement::Return\nGot: {}",
                     e
                 ),
             };
-            if return_statement.token_literal() != "return" {
-                panic!(
-                    "statement.token_literal not 'return'. Got {}",
-                    return_statement.token_literal()
-                );
+            match test.expected_value {
+                Used::Int(i) => {
+                    let return_value = match &return_statement.return_value {
+                        Expression::IntegerLiteral(i) => i,
+                        e => panic!(
+                            "Not the right kind of Expression. Expected: Expression::IntegerLiteral\nGot: {}",
+                            e
+                        ),
+                    };
+                    assert_eq!(return_value.value, i)
+                }
+                Used::Bool(b) => {
+                    let return_value = match &return_statement.return_value {
+                        Expression::Boolean(b) => b,
+                        e => panic!(
+                            "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
+                            e
+                        ),
+                    };
+                    assert_eq!(return_value.value, b)
+                }
+                Used::String(s) => {
+                    let return_value = match &return_statement.return_value {
+                        Expression::Identifier(i) => i,
+                        e => panic!(
+                            "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
+                            e
+                        ),
+                    };
+                    assert_eq!(return_value.value, s)
+                }
             }
         }
     }
