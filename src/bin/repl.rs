@@ -1,8 +1,20 @@
+use rost_interpreter::{lexer::Lexer, parser::Parser};
 use std::io::{self, Write};
 
-use rost_interpreter::{lexer::Lexer, token::TokenType};
-
 const PROMPT: &str = ">> ";
+
+const MONKEY_FACE: &str = r#"            __,__
+   .--.  .-"     "-.  .--.
+  / .. \/  .-. .-.  \/ .. \
+ | |  '|  /   Y   \  |'  | |
+ | \   \  \ 0 | 0 /  /   / |
+  \ '- ,\.-"""""""-./, -' /
+   ''-' /_   ^ ^   _\ '-''
+       |  \._   _./  |
+       \   \ '~' /   /
+        '._ '-=-' _.'
+           '-----'
+"#;
 
 fn main() {
     println!("Hello! Welcome to the Monkey programming language REPL!");
@@ -21,14 +33,16 @@ fn main() {
             break;
         }
 
-        let mut lexer = Lexer::new(input);
-        let mut token = lexer.next_token();
-        println!("---------------------------------------");
-        while token.r#type != TokenType::EOF {
-            println!("Token: {:?},\nLiteral: {:?}", token.r#type, token.literal);
-            println!("---------------------------------------");
-            token = lexer.next_token();
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program();
+        match program {
+            Ok(o) => println!("{}", o),
+            Err(e) => {
+                println!("{}", MONKEY_FACE);
+                println!("{}", e);
+            }
         }
-        println!(" ");
+        println!("---------------------------------------");
     }
 }
