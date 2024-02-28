@@ -1,4 +1,4 @@
-use rost_interpreter::{lexer::Lexer, parser::Parser};
+use rost_interpreter::{evaluator, lexer::Lexer, parser::Parser};
 use std::io::{self, Write};
 
 const PROMPT: &str = ">> ";
@@ -37,10 +37,21 @@ fn main() {
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program();
         match program {
-            Ok(o) => println!("{}", o),
+            Ok(prog) => {
+                let evaluated = evaluator::eval(prog);
+                match evaluated {
+                    Ok(evaled) => {
+                        println!("{}", evaled);
+                    }
+                    Err(e) => {
+                        eprintln!("{}", MONKEY_FACE);
+                        eprintln!("{}", e);
+                    }
+                }
+            }
             Err(e) => {
-                println!("{}", MONKEY_FACE);
-                println!("{}", e);
+                eprintln!("{}", MONKEY_FACE);
+                eprintln!("{}", e);
             }
         }
         println!("---------------------------------------");

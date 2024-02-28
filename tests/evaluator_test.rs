@@ -6,7 +6,7 @@ mod tests {
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
-        eval(program)
+        eval(program).unwrap()
     }
 
     fn test_integer_object(object: Object, expected: i64) {
