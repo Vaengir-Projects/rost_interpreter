@@ -1,17 +1,19 @@
 use std::fmt::Display;
 
-enum ObjectType {
-    Integer,
-    Boolean,
+#[derive(Debug, Clone)]
+pub enum Object {
+    Integer(Integer),
+    Boolean(Boolean),
     Null,
 }
 
 trait ObjectTrait: Display {
-    fn r#type() -> ObjectType;
+    fn r#type(&mut self) -> Object;
 }
 
-struct Integer {
-    value: i64,
+#[derive(Debug, Clone)]
+pub struct Integer {
+    pub value: i64,
 }
 
 impl Display for Integer {
@@ -21,13 +23,14 @@ impl Display for Integer {
 }
 
 impl ObjectTrait for Integer {
-    fn r#type() -> ObjectType {
-        ObjectType::Integer
+    fn r#type(&mut self) -> Object {
+        Object::Integer(Integer { value: self.value })
     }
 }
 
-struct Boolean {
-    value: bool,
+#[derive(Debug, Clone)]
+pub struct Boolean {
+    pub value: bool,
 }
 
 impl Display for Boolean {
@@ -37,12 +40,13 @@ impl Display for Boolean {
 }
 
 impl ObjectTrait for Boolean {
-    fn r#type() -> ObjectType {
-        ObjectType::Boolean
+    fn r#type(&mut self) -> Object {
+        Object::Boolean(Boolean { value: self.value })
     }
 }
 
-struct Null {}
+#[derive(Debug, Clone)]
+pub struct Null {}
 
 impl Display for Null {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -51,7 +55,7 @@ impl Display for Null {
 }
 
 impl ObjectTrait for Null {
-    fn r#type() -> ObjectType {
-        ObjectType::Null
+    fn r#type(&mut self) -> Object {
+        Object::Null
     }
 }
