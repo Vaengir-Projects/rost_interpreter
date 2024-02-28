@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use crate::{
     ast::{
         BlockStatement, Boolean, CallExpression, Expression, ExpressionStatement, FunctionLiteral,
@@ -9,6 +7,7 @@ use crate::{
     lexer::Lexer,
     token::{Token, TokenType},
 };
+use std::fmt::Display;
 
 const LOWEST: u8 = 1;
 const EQUALS: u8 = 2;
