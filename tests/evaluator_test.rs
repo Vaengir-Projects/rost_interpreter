@@ -40,6 +40,22 @@ mod tests {
                 input: String::from("10"),
                 expected: 10,
             },
+            Test {
+                input: String::from("5"),
+                expected: 5,
+            },
+            Test {
+                input: String::from("10"),
+                expected: 10,
+            },
+            Test {
+                input: String::from("-5"),
+                expected: -5,
+            },
+            Test {
+                input: String::from("-10"),
+                expected: -10,
+            },
         ];
         for test in tests {
             let evaluated = test_eval(test.input);
@@ -61,6 +77,44 @@ mod tests {
             Test {
                 input: String::from("false"),
                 expected: false,
+            },
+        ];
+        for test in tests {
+            let evaluated = test_eval(test.input);
+            test_boolean_object(evaluated, test.expected);
+        }
+    }
+
+    #[test]
+    fn test_bang_operator() {
+        struct Test {
+            input: String,
+            expected: bool,
+        }
+        let tests = vec![
+            Test {
+                input: String::from("!true"),
+                expected: false,
+            },
+            Test {
+                input: String::from("!false"),
+                expected: true,
+            },
+            Test {
+                input: String::from("!5"),
+                expected: false,
+            },
+            Test {
+                input: String::from("!!true"),
+                expected: true,
+            },
+            Test {
+                input: String::from("!!false"),
+                expected: false,
+            },
+            Test {
+                input: String::from("!!5"),
+                expected: true,
             },
         ];
         for test in tests {

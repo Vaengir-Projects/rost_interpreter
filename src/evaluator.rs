@@ -36,6 +36,10 @@ impl Eval for Expression {
         match self {
             Expression::IntegerLiteral(i) => Ok(Object::Integer(Integer { value: i.value })),
             Expression::Boolean(b) => Ok(native_bool_to_bool_struct(b.value)),
+            Expression::PrefixExpression(p) => {
+                let right = eval(*p.right.clone());
+                Ok(eval_prefix_expression(&p.operator, right?))
+            }
             e => Err(EvaluationError::MatchError(format!(
                 "Not yet implemented: {}",
                 e
@@ -80,11 +84,38 @@ pub fn eval<T: Eval + std::fmt::Debug>(node: T) -> Result<Object, EvaluationErro
 }
 
 fn eval_statements(statements: &[Statement]) -> Result<Object, EvaluationError> {
-    let mut result: Object = Object::Null;
+    let mut result: Object = NULL;
     for statement in statements {
         result = eval(statement.clone())?;
     }
     Ok(result)
+}
+
+fn eval_prefix_expression(operator: &str, right: Object) -> Object {
+    match operator {
+        "!" => eval_bang_operator_expression(right),
+        "-" => eval_minus_prefix_operator_expression(right),
+        _ => NULL,
+    }
+}
+
+fn eval_bang_operator_expression(right: Object) -> Object {
+    match right {
+        TRUE => FALSE,
+        FALSE => TRUE,
+        NULL => TRUE,
+        _ => FALSE,
+    }
+}
+
+fn eval_minus_prefix_operator_expression(right: Object) -> Object {
+    let integer = match right {
+        Object::Integer(i) => i,
+        _ => return NULL,
+    };
+    Object::Integer(Integer {
+        value: -integer.value,
+    })
 }
 
 #[derive(Debug, Clone)]

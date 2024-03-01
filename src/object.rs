@@ -1,9 +1,10 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Object {
     Integer(Integer),
     Boolean(Boolean),
+    PrefixExpression(PrefixExpression),
     Null,
 }
 
@@ -12,6 +13,7 @@ impl Display for Object {
         match self {
             Object::Integer(i) => write!(f, "{}", i),
             Object::Boolean(b) => write!(f, "{}", b),
+            Object::PrefixExpression(p) => write!(f, "{}", p),
             Object::Null => write!(f, "null"),
         }
     }
@@ -21,7 +23,7 @@ trait ObjectTrait: Display {
     fn r#type(&mut self) -> Object;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Integer {
     pub value: i64,
 }
@@ -38,7 +40,7 @@ impl ObjectTrait for Integer {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Boolean {
     pub value: bool,
 }
@@ -50,6 +52,23 @@ impl Display for Boolean {
 }
 
 impl ObjectTrait for Boolean {
+    fn r#type(&mut self) -> Object {
+        Object::Boolean(Boolean { value: self.value })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PrefixExpression {
+    pub value: bool,
+}
+
+impl Display for PrefixExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+impl ObjectTrait for PrefixExpression {
     fn r#type(&mut self) -> Object {
         Object::Boolean(Boolean { value: self.value })
     }
