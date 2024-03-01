@@ -17,6 +17,14 @@ mod tests {
         assert_eq!(result.value, expected);
     }
 
+    fn test_boolean_object(object: Object, expected: bool) {
+        let result = match object {
+            Object::Boolean(b) => b,
+            e => panic!("Expected Object::Boolean\nGot: {:?}", e),
+        };
+        assert_eq!(result.value, expected);
+    }
+
     #[test]
     fn test_eval_integer_expression() {
         struct Test {
@@ -36,6 +44,28 @@ mod tests {
         for test in tests {
             let evaluated = test_eval(test.input);
             test_integer_object(evaluated, test.expected);
+        }
+    }
+
+    #[test]
+    fn test_eval_boolean_expression() {
+        struct Test {
+            input: String,
+            expected: bool,
+        }
+        let tests = vec![
+            Test {
+                input: String::from("true"),
+                expected: true,
+            },
+            Test {
+                input: String::from("false"),
+                expected: false,
+            },
+        ];
+        for test in tests {
+            let evaluated = test_eval(test.input);
+            test_boolean_object(evaluated, test.expected);
         }
     }
 }

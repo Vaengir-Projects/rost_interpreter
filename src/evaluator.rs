@@ -1,8 +1,19 @@
 use crate::{
     ast::{Expression, ExpressionStatement, LetStatement, Program, ReturnStatement, Statement},
-    object::{Integer, Object},
+    object::{Boolean, Integer, Object},
 };
 use std::fmt::Display;
+
+const NULL: Object = Object::Null;
+const TRUE: Object = Object::Boolean(Boolean { value: true });
+const FALSE: Object = Object::Boolean(Boolean { value: false });
+
+fn native_bool_to_bool_struct(input: bool) -> Object {
+    if input {
+        return TRUE;
+    }
+    FALSE
+}
 
 pub trait Eval {
     fn on_eval(&self) -> Result<Object, EvaluationError>;
@@ -24,6 +35,7 @@ impl Eval for Expression {
     fn on_eval(&self) -> Result<Object, EvaluationError> {
         match self {
             Expression::IntegerLiteral(i) => Ok(Object::Integer(Integer { value: i.value })),
+            Expression::Boolean(b) => Ok(native_bool_to_bool_struct(b.value)),
             e => Err(EvaluationError::MatchError(format!(
                 "Not yet implemented: {}",
                 e
