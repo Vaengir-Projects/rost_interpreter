@@ -25,6 +25,10 @@ mod tests {
         assert_eq!(result.value, expected);
     }
 
+    fn test_null_object(object: Object) {
+        assert_eq!(object, Object::Null);
+    }
+
     #[test]
     fn test_eval_integer_expression() {
         struct Test {
@@ -224,6 +228,56 @@ mod tests {
         for test in tests {
             let evaluated = test_eval(test.input);
             test_boolean_object(evaluated, test.expected);
+        }
+    }
+
+    #[test]
+    fn test_if_else_expressions() {
+        #[derive(Debug)]
+        enum Res {
+            Good(i64),
+            NoGood,
+        }
+        struct Test {
+            input: String,
+            expected: Res,
+        }
+        let tests = vec![
+            Test {
+                input: String::from("if (true) { 10 }"),
+                expected: Res::Good(10),
+            },
+            Test {
+                input: String::from("if (false) { 10 }"),
+                expected: Res::NoGood,
+            },
+            Test {
+                input: String::from("if (1) { 10 }"),
+                expected: Res::Good(10),
+            },
+            Test {
+                input: String::from("if (1 < 2) { 10 }"),
+                expected: Res::Good(10),
+            },
+            Test {
+                input: String::from("if (1 > 2) { 10 }"),
+                expected: Res::NoGood,
+            },
+            Test {
+                input: String::from("if (1 > 2) { 10 } else { 20 }"),
+                expected: Res::Good(20),
+            },
+            Test {
+                input: String::from("if (1 < 2) { 10 } else { 20 }"),
+                expected: Res::Good(10),
+            },
+        ];
+        for test in tests {
+            let evaluated = test_eval(test.input);
+            match test.expected {
+                Res::Good(i) => test_integer_object(evaluated, i),
+                Res::NoGood => test_null_object(evaluated),
+            }
         }
     }
 }

@@ -1,5 +1,8 @@
 use crate::{
-    ast::{Expression, ExpressionStatement, LetStatement, Program, ReturnStatement, Statement},
+    ast::{
+        BlockStatement, Expression, ExpressionStatement, IfExpression, LetStatement, Program,
+        ReturnStatement, Statement,
+    },
     object::{Boolean, Integer, Object},
 };
 use std::fmt::Display;
@@ -45,6 +48,8 @@ impl Eval for Expression {
                 let right = eval(*i.right.clone());
                 Ok(eval_infix_expression(&i.operator, left?, right?))
             }
+            Expression::BlockStatement(b) => Ok(eval_statements(&b.statements)?),
+            Expression::IfExpression(i) => Ok(eval_if_expression(i)?),
             e => Err(EvaluationError::MatchError(format!(
                 "Not yet implemented: {}",
                 e
@@ -84,8 +89,14 @@ impl Eval for ReturnStatement {
     }
 }
 
+impl Eval for BlockStatement {
+    fn on_eval(&self) -> Result<Object, EvaluationError> {
+        eval_statements(&self.statements)
+    }
+}
+
 pub fn eval<T: Eval + std::fmt::Debug>(node: T) -> Result<Object, EvaluationError> {
-    Ok(node.on_eval()?)
+    node.on_eval()
 }
 
 fn eval_statements(statements: &[Statement]) -> Result<Object, EvaluationError> {
@@ -155,6 +166,25 @@ fn eval_integer_infix_expression(operator: &str, left: i64, right: i64) -> Objec
         "==" => native_bool_to_bool_struct(left == right),
         "!=" => native_bool_to_bool_struct(left != right),
         _ => NULL,
+    }
+}
+
+fn eval_if_expression(if_expression: &IfExpression) -> Result<Object, EvaluationError> {
+    let condition = eval(*if_expression.condition.clone())?;
+    if is_truthy(condition) {
+        return eval(if_expression.consequence.clone());
+    } else if if_expression.alternative.is_some() {
+        return eval(if_expression.alternative.clone().unwrap());
+    }
+    Ok(NULL)
+}
+
+fn is_truthy(object: Object) -> bool {
+    match object {
+        Object::Null => false,
+        TRUE => true,
+        FALSE => false,
+        _ => true,
     }
 }
 

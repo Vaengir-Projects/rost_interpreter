@@ -71,6 +71,7 @@ pub enum Expression {
     InfixExpression(InfixExpression),
     Boolean(Boolean),
     IfExpression(IfExpression),
+    BlockStatement(BlockStatement),
     FunctionLiteral(FunctionLiteral),
     CallExpression(CallExpression),
     Default,

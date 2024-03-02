@@ -268,8 +268,8 @@ impl Parser {
         self.next_token();
         let expression = self.parse_expression(LOWEST)?;
         if !self.expect_peek(TokenType::RParen) {
-            return Err(ParserError::GroupedExpression(format!(
-                "Can't match parens"
+            return Err(ParserError::GroupedExpression(String::from(
+                "Can't match parens",
             )));
         }
         Ok(expression)
@@ -278,15 +278,15 @@ impl Parser {
     fn parse_if_expression(&mut self) -> Result<Expression, ParserError> {
         let token = self.cur_token.clone();
         if !self.expect_peek(TokenType::LParen) {
-            return Err(ParserError::IfExpression(format!(
-                "Next TokenType should be 'LParen'"
+            return Err(ParserError::IfExpression(String::from(
+                "Next TokenType should be 'LParen'",
             )));
         }
         self.next_token();
         let condition = Box::new(self.parse_expression(LOWEST)?);
         if !self.expect_peek(TokenType::RParen) || !self.expect_peek(TokenType::LBrace) {
-            return Err(ParserError::IfExpression(format!(
-                "Next TokenTypes should be 'RParen' and then 'LBrace'"
+            return Err(ParserError::IfExpression(String::from(
+                "Next TokenTypes should be 'RParen' and then 'LBrace'",
             )));
         }
         let consequence = self.parse_block_statement()?;
@@ -299,8 +299,8 @@ impl Parser {
         if self.peek_token_is(TokenType::Else) {
             self.next_token();
             if !self.expect_peek(TokenType::LBrace) {
-                return Err(ParserError::IfExpression(format!(
-                    "Next Tokentype should be 'LBrace'"
+                return Err(ParserError::IfExpression(String::from(
+                    "Next Tokentype should be 'LBrace'",
                 )));
             }
             if_expression.alternative = Some(self.parse_block_statement()?);
@@ -323,14 +323,14 @@ impl Parser {
     fn parse_function_literal(&mut self) -> Result<Expression, ParserError> {
         let token = self.cur_token.clone();
         if !self.expect_peek(TokenType::LParen) {
-            return Err(ParserError::FunctionLiteral(format!(
-                "Next TokenType should be 'LParen'"
+            return Err(ParserError::FunctionLiteral(String::from(
+                "Next TokenType should be 'LParen'",
             )));
         }
         let parameters = self.parse_function_parameters();
         if !self.expect_peek(TokenType::LBrace) {
-            return Err(ParserError::FunctionLiteral(format!(
-                "Next TokenType should be 'LBrace'"
+            return Err(ParserError::FunctionLiteral(String::from(
+                "Next TokenType should be 'LBrace'",
             )));
         }
         let body = self.parse_block_statement()?;
