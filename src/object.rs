@@ -5,6 +5,7 @@ pub enum Object {
     Integer(Integer),
     Boolean(Boolean),
     PrefixExpression(PrefixExpression),
+    ReturnValue(ReturnValue),
     Null,
 }
 
@@ -14,6 +15,7 @@ impl Display for Object {
             Object::Integer(i) => write!(f, "{}", i),
             Object::Boolean(b) => write!(f, "{}", b),
             Object::PrefixExpression(p) => write!(f, "{}", p),
+            Object::ReturnValue(rv) => write!(f, "{}", rv),
             Object::Null => write!(f, "null"),
         }
     }
@@ -71,6 +73,25 @@ impl Display for PrefixExpression {
 impl ObjectTrait for PrefixExpression {
     fn r#type(&mut self) -> Object {
         Object::Boolean(Boolean { value: self.value })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReturnValue {
+    pub value: Box<Object>,
+}
+
+impl Display for ReturnValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+impl ObjectTrait for ReturnValue {
+    fn r#type(&mut self) -> Object {
+        Object::ReturnValue(ReturnValue {
+            value: self.value.clone(),
+        })
     }
 }
 

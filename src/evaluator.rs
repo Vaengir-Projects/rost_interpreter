@@ -3,7 +3,7 @@ use crate::{
         BlockStatement, Expression, ExpressionStatement, IfExpression, LetStatement, Program,
         ReturnStatement, Statement,
     },
-    object::{Boolean, Integer, Object},
+    object::{Boolean, Integer, Object, ReturnValue},
 };
 use std::fmt::Display;
 
@@ -24,7 +24,7 @@ pub trait Eval {
 
 impl Eval for Program {
     fn on_eval(&self) -> Result<Object, EvaluationError> {
-        eval_statements(&self.statements)
+        eval_program(self)
     }
 }
 
@@ -48,7 +48,7 @@ impl Eval for Expression {
                 let right = eval(*i.right.clone());
                 Ok(eval_infix_expression(&i.operator, left?, right?))
             }
-            Expression::BlockStatement(b) => Ok(eval_statements(&b.statements)?),
+            Expression::BlockStatement(b) => Ok(eval_block_statement(b)?),
             Expression::IfExpression(i) => Ok(eval_if_expression(i)?),
             e => Err(EvaluationError::MatchError(format!(
                 "Not yet implemented: {}",
@@ -85,13 +85,16 @@ impl Eval for LetStatement {
 
 impl Eval for ReturnStatement {
     fn on_eval(&self) -> Result<Object, EvaluationError> {
-        todo!()
+        let value = eval(self.return_value.clone())?;
+        Ok(Object::ReturnValue(ReturnValue {
+            value: Box::new(value),
+        }))
     }
 }
 
 impl Eval for BlockStatement {
     fn on_eval(&self) -> Result<Object, EvaluationError> {
-        eval_statements(&self.statements)
+        eval_block_statement(self)
     }
 }
 
@@ -99,10 +102,13 @@ pub fn eval<T: Eval + std::fmt::Debug>(node: T) -> Result<Object, EvaluationErro
     node.on_eval()
 }
 
-fn eval_statements(statements: &[Statement]) -> Result<Object, EvaluationError> {
+fn eval_program(program: &Program) -> Result<Object, EvaluationError> {
     let mut result: Object = NULL;
-    for statement in statements {
+    for statement in &program.statements {
         result = eval(statement.clone())?;
+        if let Object::ReturnValue(rv) = result {
+            return Ok(*rv.value);
+        }
     }
     Ok(result)
 }
@@ -186,6 +192,17 @@ fn is_truthy(object: Object) -> bool {
         FALSE => false,
         _ => true,
     }
+}
+
+fn eval_block_statement(block: &BlockStatement) -> Result<Object, EvaluationError> {
+    let mut result = Object::Null;
+    for statement in &block.statements {
+        result = eval(statement.clone())?;
+        if let Object::ReturnValue(_) = result {
+            return Ok(result);
+        }
+    }
+    Ok(result)
 }
 
 #[derive(Debug, Clone)]
