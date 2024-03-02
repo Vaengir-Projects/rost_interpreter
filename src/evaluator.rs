@@ -40,6 +40,11 @@ impl Eval for Expression {
                 let right = eval(*p.right.clone());
                 Ok(eval_prefix_expression(&p.operator, right?))
             }
+            Expression::InfixExpression(i) => {
+                let left = eval(*i.left.clone());
+                let right = eval(*i.right.clone());
+                Ok(eval_infix_expression(&i.operator, left?, right?))
+            }
             e => Err(EvaluationError::MatchError(format!(
                 "Not yet implemented: {}",
                 e
@@ -116,6 +121,41 @@ fn eval_minus_prefix_operator_expression(right: Object) -> Object {
     Object::Integer(Integer {
         value: -integer.value,
     })
+}
+
+fn eval_infix_expression(operator: &str, left: Object, right: Object) -> Object {
+    match (&left, &right) {
+        (Object::Integer(i), Object::Integer(i2)) => {
+            eval_integer_infix_expression(operator, i.value, i2.value)
+        }
+        _ => match operator {
+            "==" => native_bool_to_bool_struct(left == right),
+            "!=" => native_bool_to_bool_struct(left != right),
+            _ => NULL,
+        },
+    }
+}
+
+fn eval_integer_infix_expression(operator: &str, left: i64, right: i64) -> Object {
+    match operator {
+        "+" => Object::Integer(Integer {
+            value: left + right,
+        }),
+        "-" => Object::Integer(Integer {
+            value: left - right,
+        }),
+        "*" => Object::Integer(Integer {
+            value: left * right,
+        }),
+        "/" => Object::Integer(Integer {
+            value: left / right,
+        }),
+        "<" => native_bool_to_bool_struct(left < right),
+        ">" => native_bool_to_bool_struct(left > right),
+        "==" => native_bool_to_bool_struct(left == right),
+        "!=" => native_bool_to_bool_struct(left != right),
+        _ => NULL,
+    }
 }
 
 #[derive(Debug, Clone)]
