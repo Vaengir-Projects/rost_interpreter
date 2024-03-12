@@ -1,12 +1,17 @@
 #[cfg(test)]
 mod tests {
-    use rost_interpreter::{evaluator::eval, lexer::Lexer, object::Object, parser::Parser};
+    use rost_interpreter::{
+        evaluator::{eval, EvaluationError},
+        lexer::Lexer,
+        object::Object,
+        parser::Parser,
+    };
 
-    fn test_eval(input: String) -> Object {
+    fn test_eval(input: String) -> Result<Object, EvaluationError> {
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
-        eval(program).unwrap()
+        eval(program)
     }
 
     fn test_integer_object(object: Object, expected: i64) {
@@ -98,7 +103,7 @@ mod tests {
             },
         ];
         for test in tests {
-            let evaluated = test_eval(test.input);
+            let evaluated = test_eval(test.input).unwrap();
             test_integer_object(evaluated, test.expected);
         }
     }
@@ -188,7 +193,7 @@ mod tests {
             },
         ];
         for test in tests {
-            let evaluated = test_eval(test.input);
+            let evaluated = test_eval(test.input).unwrap();
             test_boolean_object(evaluated, test.expected);
         }
     }
@@ -226,7 +231,7 @@ mod tests {
             },
         ];
         for test in tests {
-            let evaluated = test_eval(test.input);
+            let evaluated = test_eval(test.input).unwrap();
             test_boolean_object(evaluated, test.expected);
         }
     }
@@ -273,7 +278,7 @@ mod tests {
             },
         ];
         for test in tests {
-            let evaluated = test_eval(test.input);
+            let evaluated = test_eval(test.input).unwrap();
             match test.expected {
                 Res::Good(i) => test_integer_object(evaluated, i),
                 Res::NoGood => test_null_object(evaluated),
@@ -310,8 +315,61 @@ mod tests {
             },
         ];
         for test in tests {
-            let evaluated = test_eval(test.input);
+            let evaluated = test_eval(test.input).unwrap();
             test_integer_object(evaluated, test.expected);
+        }
+    }
+
+    #[test]
+    fn test_error_handling() {
+        struct Test {
+            input: String,
+            expected_message: EvaluationError,
+        }
+        let tests = vec![
+            Test {
+                input: String::from("5 + true;"),
+                expected_message: EvaluationError::TypeError(String::from("INTEGER + BOOLEAN")),
+            },
+            Test {
+                input: String::from("5 + true; 5;"),
+                expected_message: EvaluationError::TypeError(String::from("INTEGER + BOOLEAN")),
+            },
+            Test {
+                input: String::from("-true"),
+                expected_message: EvaluationError::OperatorError(String::from("-BOOLEAN")),
+            },
+            Test {
+                input: String::from("true + false;"),
+                expected_message: EvaluationError::OperatorError(String::from("BOOLEAN + BOOLEAN")),
+            },
+            Test {
+                input: String::from("5; true + false; 5"),
+                expected_message: EvaluationError::OperatorError(String::from("BOOLEAN + BOOLEAN")),
+            },
+            Test {
+                input: String::from("if (10 > 1) { true + false; }"),
+                expected_message: EvaluationError::OperatorError(String::from("BOOLEAN + BOOLEAN")),
+            },
+            Test {
+                input: String::from(
+                    r#"if (10 > 1) {
+                    if (10 > 1) {
+                    return true + false;
+                    }
+                    return 1;
+                    }"#,
+                ),
+                expected_message: EvaluationError::OperatorError(String::from("BOOLEAN + BOOLEAN")),
+            },
+        ];
+        for test in tests {
+            let evaluated = test_eval(test.input);
+            let err_object = match evaluated {
+                Ok(o) => panic!("Not an Error\nGot: {}", o),
+                Err(e) => e,
+            };
+            assert_eq!(err_object, test.expected_message);
         }
     }
 }

@@ -9,6 +9,18 @@ pub enum Object {
     Null,
 }
 
+impl ObjectTrait for Object {
+    fn r#type(&self) -> String {
+        match self {
+            Object::Integer(i) => i.r#type(),
+            Object::Boolean(b) => b.r#type(),
+            Object::PrefixExpression(p) => p.r#type(),
+            Object::ReturnValue(rv) => rv.r#type(),
+            Object::Null => panic!("See if this ever happens"),
+        }
+    }
+}
+
 impl Display for Object {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -21,8 +33,8 @@ impl Display for Object {
     }
 }
 
-trait ObjectTrait: Display {
-    fn r#type(&mut self) -> Object;
+pub trait ObjectTrait: Display {
+    fn r#type(&self) -> String;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -37,8 +49,8 @@ impl Display for Integer {
 }
 
 impl ObjectTrait for Integer {
-    fn r#type(&mut self) -> Object {
-        Object::Integer(Integer { value: self.value })
+    fn r#type(&self) -> String {
+        String::from("INTEGER")
     }
 }
 
@@ -54,8 +66,8 @@ impl Display for Boolean {
 }
 
 impl ObjectTrait for Boolean {
-    fn r#type(&mut self) -> Object {
-        Object::Boolean(Boolean { value: self.value })
+    fn r#type(&self) -> String {
+        String::from("BOOLEAN")
     }
 }
 
@@ -71,8 +83,8 @@ impl Display for PrefixExpression {
 }
 
 impl ObjectTrait for PrefixExpression {
-    fn r#type(&mut self) -> Object {
-        Object::Boolean(Boolean { value: self.value })
+    fn r#type(&self) -> String {
+        String::from("PREFIXEXPRESSION")
     }
 }
 
@@ -88,10 +100,8 @@ impl Display for ReturnValue {
 }
 
 impl ObjectTrait for ReturnValue {
-    fn r#type(&mut self) -> Object {
-        Object::ReturnValue(ReturnValue {
-            value: self.value.clone(),
-        })
+    fn r#type(&self) -> String {
+        String::from("RETURNVALUE")
     }
 }
 
@@ -105,7 +115,7 @@ impl Display for Null {
 }
 
 impl ObjectTrait for Null {
-    fn r#type(&mut self) -> Object {
-        Object::Null
+    fn r#type(&self) -> String {
+        String::from("NULL")
     }
 }
