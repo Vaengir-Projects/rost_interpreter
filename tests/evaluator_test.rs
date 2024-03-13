@@ -3,15 +3,18 @@ mod tests {
     use rost_interpreter::{
         evaluator::{eval, EvaluationError},
         lexer::Lexer,
-        object::Object,
+        object::{Environment, Object},
         parser::Parser,
     };
+    use std::cell::RefCell;
 
     fn test_eval(input: String) -> Result<Object, EvaluationError> {
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
-        eval(program)
+        let env = RefCell::new(Environment::new());
+        let result = eval(program, &mut env.borrow_mut());
+        result
     }
 
     fn test_integer_object(object: Object, expected: i64) {
@@ -362,6 +365,10 @@ mod tests {
                 ),
                 expected_message: EvaluationError::OperatorError(String::from("BOOLEAN + BOOLEAN")),
             },
+            Test {
+                input: String::from("foobar"),
+                expected_message: EvaluationError::IdentError(String::from("foobar")),
+            },
         ];
         for test in tests {
             let evaluated = test_eval(test.input);
@@ -370,6 +377,35 @@ mod tests {
                 Err(e) => e,
             };
             assert_eq!(err_object, test.expected_message);
+        }
+    }
+
+    #[test]
+    fn test_let_statement() {
+        struct Test {
+            input: String,
+            expected: i64,
+        }
+        let tests = vec![
+            Test {
+                input: String::from("let a = 5; a;"),
+                expected: 5,
+            },
+            Test {
+                input: String::from("let a = 5 * 5; a;"),
+                expected: 25,
+            },
+            Test {
+                input: String::from("let a = 5; let b = a; b;"),
+                expected: 5,
+            },
+            Test {
+                input: String::from("let a = 5; let b = a; let c = a + b + 5; c;"),
+                expected: 15,
+            },
+        ];
+        for test in tests {
+            test_integer_object(test_eval(test.input).unwrap(), test.expected);
         }
     }
 }

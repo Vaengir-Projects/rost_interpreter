@@ -1,9 +1,9 @@
 use crate::{
     ast::{
-        BlockStatement, Expression, ExpressionStatement, IfExpression, LetStatement, Program,
-        ReturnStatement, Statement,
+        BlockStatement, Expression, ExpressionStatement, Identifier, IfExpression, LetStatement,
+        Program, ReturnStatement, Statement,
     },
-    object::{Boolean, Integer, Object, ObjectTrait, ReturnValue},
+    object::{Boolean, Environment, Integer, Object, ObjectTrait, ReturnValue},
 };
 use std::fmt::Display;
 
@@ -19,39 +19,40 @@ fn native_bool_to_bool_struct(input: bool) -> Object {
 }
 
 pub trait Eval {
-    fn on_eval(&self) -> Result<Object, EvaluationError>;
+    fn on_eval(&self, env: &mut Environment) -> Result<Object, EvaluationError>;
 }
 
 impl Eval for Program {
-    fn on_eval(&self) -> Result<Object, EvaluationError> {
-        eval_program(self)
+    fn on_eval(&self, env: &mut Environment) -> Result<Object, EvaluationError> {
+        eval_program(self, env)
     }
 }
 
 impl Eval for ExpressionStatement {
-    fn on_eval(&self) -> Result<Object, EvaluationError> {
-        eval(self.expression.clone())
+    fn on_eval(&self, env: &mut Environment) -> Result<Object, EvaluationError> {
+        eval(self.expression.clone(), env)
     }
 }
 
 impl Eval for Expression {
-    fn on_eval(&self) -> Result<Object, EvaluationError> {
+    fn on_eval(&self, env: &mut Environment) -> Result<Object, EvaluationError> {
         match self {
             Expression::IntegerLiteral(i) => Ok(Object::Integer(Integer { value: i.value })),
             Expression::Boolean(b) => Ok(native_bool_to_bool_struct(b.value)),
             Expression::PrefixExpression(p) => {
-                let right = eval(*p.right.clone());
+                let right = eval(*p.right.clone(), env);
                 Ok(eval_prefix_expression(&p.operator, right?)?)
             }
             Expression::InfixExpression(i) => {
-                let left = eval(*i.left.clone());
-                let right = eval(*i.right.clone());
+                let left = eval(*i.left.clone(), env);
+                let right = eval(*i.right.clone(), env);
                 Ok(eval_infix_expression(&i.operator, left?, right?)?)
             }
-            Expression::BlockStatement(b) => Ok(eval_block_statement(b)?),
-            Expression::IfExpression(i) => Ok(eval_if_expression(i)?),
+            Expression::BlockStatement(b) => Ok(eval_block_statement(b, env)?),
+            Expression::IfExpression(i) => Ok(eval_if_expression(i, env)?),
+            Expression::Identifier(i) => Ok(eval_identifier(i, env)?),
             e => Err(EvaluationError::MatchError(format!(
-                "Not yet implemented: {}",
+                "Missing implementation of eval on expression: {}",
                 e
             ))),
         }
@@ -59,18 +60,18 @@ impl Eval for Expression {
 }
 
 impl Eval for Statement {
-    fn on_eval(&self) -> Result<Object, EvaluationError> {
+    fn on_eval(&self, env: &mut Environment) -> Result<Object, EvaluationError> {
         match self {
             Statement::Let(ls) => {
-                let obj = eval(ls.clone())?;
+                let obj = eval(ls.clone(), env)?;
                 Ok(obj)
             }
             Statement::Return(rs) => {
-                let obj = eval(rs.clone())?;
+                let obj = eval(rs.clone(), env)?;
                 Ok(obj)
             }
             Statement::Expression(es) => {
-                let obj = eval(es.clone())?;
+                let obj = eval(es.clone(), env)?;
                 Ok(obj)
             }
         }
@@ -78,14 +79,15 @@ impl Eval for Statement {
 }
 
 impl Eval for LetStatement {
-    fn on_eval(&self) -> Result<Object, EvaluationError> {
-        todo!()
+    fn on_eval(&self, env: &mut Environment) -> Result<Object, EvaluationError> {
+        let val = eval(self.value.clone(), env)?;
+        Ok(env.set(&self.name.value, val))
     }
 }
 
 impl Eval for ReturnStatement {
-    fn on_eval(&self) -> Result<Object, EvaluationError> {
-        let value = eval(self.return_value.clone())?;
+    fn on_eval(&self, env: &mut Environment) -> Result<Object, EvaluationError> {
+        let value = eval(self.return_value.clone(), env)?;
         Ok(Object::ReturnValue(ReturnValue {
             value: Box::new(value),
         }))
@@ -93,19 +95,28 @@ impl Eval for ReturnStatement {
 }
 
 impl Eval for BlockStatement {
-    fn on_eval(&self) -> Result<Object, EvaluationError> {
-        eval_block_statement(self)
+    fn on_eval(&self, env: &mut Environment) -> Result<Object, EvaluationError> {
+        eval_block_statement(self, env)
     }
 }
 
-pub fn eval<T: Eval + std::fmt::Debug>(node: T) -> Result<Object, EvaluationError> {
-    node.on_eval()
+impl Eval for Identifier {
+    fn on_eval(&self, env: &mut Environment) -> Result<Object, EvaluationError> {
+        eval_identifier(self, env)
+    }
 }
 
-fn eval_program(program: &Program) -> Result<Object, EvaluationError> {
+pub fn eval<T: Eval + std::fmt::Debug>(
+    node: T,
+    env: &mut Environment,
+) -> Result<Object, EvaluationError> {
+    node.on_eval(env)
+}
+
+fn eval_program(program: &Program, env: &mut Environment) -> Result<Object, EvaluationError> {
     let mut result: Object = NULL;
     for statement in &program.statements {
-        result = eval(statement.clone())?;
+        result = eval(statement.clone(), env)?;
         if let Object::ReturnValue(rv) = result {
             return Ok(*rv.value);
         }
@@ -154,7 +165,7 @@ fn eval_infix_expression(
     left: Object,
     right: Object,
 ) -> Result<Object, EvaluationError> {
-    if &left.r#type() != &right.r#type() {
+    if left.r#type() != right.r#type() {
         return Err(EvaluationError::TypeError(format!(
             "{} {} {}",
             left.r#type(),
@@ -212,12 +223,15 @@ fn eval_integer_infix_expression(
     }
 }
 
-fn eval_if_expression(if_expression: &IfExpression) -> Result<Object, EvaluationError> {
-    let condition = eval(*if_expression.condition.clone())?;
+fn eval_if_expression(
+    if_expression: &IfExpression,
+    env: &mut Environment,
+) -> Result<Object, EvaluationError> {
+    let condition = eval(*if_expression.condition.clone(), env)?;
     if is_truthy(condition) {
-        return eval(if_expression.consequence.clone());
+        return eval(if_expression.consequence.clone(), env);
     } else if if_expression.alternative.is_some() {
-        return eval(if_expression.alternative.clone().unwrap());
+        return eval(if_expression.alternative.clone().unwrap(), env);
     }
     Ok(NULL)
 }
@@ -231,10 +245,13 @@ fn is_truthy(object: Object) -> bool {
     }
 }
 
-fn eval_block_statement(block: &BlockStatement) -> Result<Object, EvaluationError> {
+fn eval_block_statement(
+    block: &BlockStatement,
+    env: &mut Environment,
+) -> Result<Object, EvaluationError> {
     let mut result = Object::Null;
     for statement in &block.statements {
-        result = eval(statement.clone())?;
+        result = eval(statement.clone(), env)?;
         if let Object::ReturnValue(_) = result {
             return Ok(result);
         }
@@ -242,10 +259,15 @@ fn eval_block_statement(block: &BlockStatement) -> Result<Object, EvaluationErro
     Ok(result)
 }
 
+fn eval_identifier(node: &Identifier, env: &mut Environment) -> Result<Object, EvaluationError> {
+    env.get(&node.value)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EvaluationError {
     OperatorError(String),
     TypeError(String),
+    IdentError(String),
     MatchError(String),
 }
 
@@ -254,6 +276,7 @@ impl Display for EvaluationError {
         match self {
             EvaluationError::OperatorError(o) => write!(f, "Unknown operator: {}", o),
             EvaluationError::TypeError(t) => write!(f, "Type mismatch: {}", t),
+            EvaluationError::IdentError(i) => write!(f, "Identifier not found: {}", i),
             EvaluationError::MatchError(m) => write!(f, "MatchError: {}", m),
         }
     }

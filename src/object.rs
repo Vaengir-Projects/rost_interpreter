@@ -1,4 +1,5 @@
-use std::fmt::Display;
+use crate::evaluator::EvaluationError;
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Object {
@@ -117,5 +118,30 @@ impl Display for Null {
 impl ObjectTrait for Null {
     fn r#type(&self) -> String {
         String::from("NULL")
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Environment {
+    store: HashMap<String, Object>,
+}
+
+impl Environment {
+    pub fn new() -> Environment {
+        Environment {
+            store: HashMap::new(),
+        }
+    }
+
+    pub fn get(&self, name: &str) -> Result<Object, EvaluationError> {
+        match self.store.get(name) {
+            Some(value) => Ok(value.clone()),
+            None => Err(EvaluationError::IdentError(name.to_string())),
+        }
+    }
+
+    pub fn set(&mut self, name: &str, val: Object) -> Object {
+        self.store.insert(name.to_string(), val.clone());
+        val
     }
 }

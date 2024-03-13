@@ -1,5 +1,8 @@
-use rost_interpreter::{evaluator, lexer::Lexer, parser::Parser};
-use std::io::{self, Write};
+use rost_interpreter::{evaluator, lexer::Lexer, object::Environment, parser::Parser};
+use std::{
+    cell::RefCell,
+    io::{self, Write},
+};
 
 const PROMPT: &str = ">> ";
 
@@ -18,6 +21,7 @@ const MONKEY_FACE: &str = r#"            __,__
 
 fn main() {
     println!("Hello! Welcome to the Monkey programming language REPL!");
+    let env = RefCell::new(Environment::new());
     loop {
         print!("{}", PROMPT);
         io::stdout().flush().expect("Failed to flush stdout");
@@ -38,7 +42,7 @@ fn main() {
         let program = parser.parse_program();
         match program {
             Ok(prog) => {
-                let evaluated = evaluator::eval(prog);
+                let evaluated = evaluator::eval(prog, &mut env.borrow_mut());
                 match evaluated {
                     Ok(evaled) => {
                         println!("{}", evaled);
