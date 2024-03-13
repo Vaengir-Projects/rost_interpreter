@@ -3,7 +3,7 @@ use crate::{
         BlockStatement, Expression, ExpressionStatement, Identifier, IfExpression, LetStatement,
         Program, ReturnStatement, Statement,
     },
-    object::{Boolean, Environment, Integer, Object, ObjectTrait, ReturnValue},
+    object::{Boolean, Environment, Function, Integer, Object, ObjectTrait, ReturnValue},
 };
 use std::fmt::Display;
 
@@ -51,6 +51,11 @@ impl Eval for Expression {
             Expression::BlockStatement(b) => Ok(eval_block_statement(b, env)?),
             Expression::IfExpression(i) => Ok(eval_if_expression(i, env)?),
             Expression::Identifier(i) => Ok(eval_identifier(i, env)?),
+            Expression::FunctionLiteral(fl) => Ok(Object::Function(Function {
+                parameters: fl.parameters.clone(),
+                body: fl.body.clone(),
+                env: env.clone(),
+            })),
             e => Err(EvaluationError::MatchError(format!(
                 "Missing implementation of eval on expression: {}",
                 e

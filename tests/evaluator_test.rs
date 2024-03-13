@@ -8,7 +8,7 @@ mod tests {
     };
     use std::cell::RefCell;
 
-    fn test_eval(input: String) -> Result<Object, EvaluationError> {
+    fn test_eval(input: &str) -> Result<Object, EvaluationError> {
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
@@ -106,7 +106,7 @@ mod tests {
             },
         ];
         for test in tests {
-            let evaluated = test_eval(test.input).unwrap();
+            let evaluated = test_eval(&test.input).unwrap();
             test_integer_object(evaluated, test.expected);
         }
     }
@@ -196,7 +196,7 @@ mod tests {
             },
         ];
         for test in tests {
-            let evaluated = test_eval(test.input).unwrap();
+            let evaluated = test_eval(&test.input).unwrap();
             test_boolean_object(evaluated, test.expected);
         }
     }
@@ -234,7 +234,7 @@ mod tests {
             },
         ];
         for test in tests {
-            let evaluated = test_eval(test.input).unwrap();
+            let evaluated = test_eval(&test.input).unwrap();
             test_boolean_object(evaluated, test.expected);
         }
     }
@@ -281,7 +281,7 @@ mod tests {
             },
         ];
         for test in tests {
-            let evaluated = test_eval(test.input).unwrap();
+            let evaluated = test_eval(&test.input).unwrap();
             match test.expected {
                 Res::Good(i) => test_integer_object(evaluated, i),
                 Res::NoGood => test_null_object(evaluated),
@@ -318,7 +318,7 @@ mod tests {
             },
         ];
         for test in tests {
-            let evaluated = test_eval(test.input).unwrap();
+            let evaluated = test_eval(&test.input).unwrap();
             test_integer_object(evaluated, test.expected);
         }
     }
@@ -371,7 +371,7 @@ mod tests {
             },
         ];
         for test in tests {
-            let evaluated = test_eval(test.input);
+            let evaluated = test_eval(&test.input);
             let err_object = match evaluated {
                 Ok(o) => panic!("Not an Error\nGot: {}", o),
                 Err(e) => e,
@@ -405,7 +405,20 @@ mod tests {
             },
         ];
         for test in tests {
-            test_integer_object(test_eval(test.input).unwrap(), test.expected);
+            test_integer_object(test_eval(&test.input).unwrap(), test.expected);
         }
+    }
+
+    #[test]
+    fn test_function_object() {
+        let input: &str = "fn(x) { x + 2; };";
+        let evaluated = test_eval(input).unwrap();
+        let func = match evaluated {
+            Object::Function(f) => f,
+            e => panic!("Expected a Object:Function\nGot: {}", e),
+        };
+        assert_eq!(func.parameters.len(), 1);
+        assert_eq!(func.parameters[0].value, "x");
+        assert_eq!(format!("{}", func.body), "(x + 2)");
     }
 }

@@ -1,4 +1,7 @@
-use crate::evaluator::EvaluationError;
+use crate::{
+    ast::{BlockStatement, Identifier},
+    evaluator::EvaluationError,
+};
 use std::{collections::HashMap, fmt::Display};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -7,6 +10,7 @@ pub enum Object {
     Boolean(Boolean),
     PrefixExpression(PrefixExpression),
     ReturnValue(ReturnValue),
+    Function(Function),
     Null,
 }
 
@@ -17,6 +21,7 @@ impl ObjectTrait for Object {
             Object::Boolean(b) => b.r#type(),
             Object::PrefixExpression(p) => p.r#type(),
             Object::ReturnValue(rv) => rv.r#type(),
+            Object::Function(f) => f.r#type(),
             Object::Null => panic!("See if this ever happens"),
         }
     }
@@ -29,6 +34,7 @@ impl Display for Object {
             Object::Boolean(b) => write!(f, "{}", b),
             Object::PrefixExpression(p) => write!(f, "{}", p),
             Object::ReturnValue(rv) => write!(f, "{}", rv),
+            Object::Function(func) => write!(f, "{}", func),
             Object::Null => write!(f, "null"),
         }
     }
@@ -106,6 +112,31 @@ impl ObjectTrait for ReturnValue {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Function {
+    pub parameters: Vec<Identifier>,
+    pub body: BlockStatement,
+    pub env: Environment,
+}
+
+impl Display for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let parameters = self
+            .parameters
+            .iter()
+            .map(|p| p.value.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+        write!(f, "fn({}) {{\n  {}\n}}", parameters, self.body)
+    }
+}
+
+impl ObjectTrait for Function {
+    fn r#type(&self) -> String {
+        String::from("FUNCTION")
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Null {}
 
@@ -121,7 +152,7 @@ impl ObjectTrait for Null {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Environment {
     store: HashMap<String, Object>,
 }
