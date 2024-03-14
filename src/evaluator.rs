@@ -56,6 +56,11 @@ impl Eval for Expression {
                 body: fl.body.clone(),
                 env: env.clone(),
             })),
+            Expression::CallExpression(ce) => {
+                let function = eval(*ce.function.clone(), env)?;
+                let args = eval_expressions(&ce.arguments, env)?;
+                apply_function(function, &args)
+            }
             e => Err(EvaluationError::MatchError(format!(
                 "Missing implementation of eval on expression: {}",
                 e
@@ -268,11 +273,54 @@ fn eval_identifier(node: &Identifier, env: &mut Environment) -> Result<Object, E
     env.get(&node.value)
 }
 
+fn eval_expressions(
+    expressions: &[Expression],
+    env: &mut Environment,
+) -> Result<Vec<Object>, EvaluationError> {
+    let mut result: Vec<Object> = Vec::new();
+    for expression in expressions {
+        let evaluated = eval(expression.clone(), env)?;
+        result.push(evaluated);
+    }
+    Ok(result)
+}
+
+fn apply_function(func: Object, args: &[Object]) -> Result<Object, EvaluationError> {
+    let func = match func {
+        Object::Function(f) => f,
+        e => {
+            return Err(EvaluationError::Function(format!(
+                "Expected an Object::Function\nGot: {}",
+                e
+            )))
+        }
+    };
+    let mut extended_env = extend_function_env(func.clone(), args);
+    let evaluated = eval(func.body, &mut extended_env)?;
+    Ok(unwrap_return_value(evaluated))
+}
+
+fn extend_function_env(func: Function, args: &[Object]) -> Environment {
+    let mut env = Environment::new(Some(Box::new(func.env)));
+    for (i, param) in func.parameters.iter().enumerate() {
+        env.set(&param.value, args[i].clone());
+    }
+    env
+}
+
+fn unwrap_return_value(object: Object) -> Object {
+    if let Object::ReturnValue(rv) = object {
+        return *rv.value;
+    }
+    object
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EvaluationError {
     OperatorError(String),
     TypeError(String),
     IdentError(String),
+    Function(String),
     MatchError(String),
 }
 
@@ -282,6 +330,7 @@ impl Display for EvaluationError {
             EvaluationError::OperatorError(o) => write!(f, "Unknown operator: {}", o),
             EvaluationError::TypeError(t) => write!(f, "Type mismatch: {}", t),
             EvaluationError::IdentError(i) => write!(f, "Identifier not found: {}", i),
+            EvaluationError::Function(func) => write!(f, "Not a function: {}", func),
             EvaluationError::MatchError(m) => write!(f, "MatchError: {}", m),
         }
     }

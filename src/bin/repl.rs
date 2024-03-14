@@ -21,7 +21,7 @@ const MONKEY_FACE: &str = r#"            __,__
 
 fn main() {
     println!("Hello! Welcome to the Monkey programming language REPL!");
-    let env = RefCell::new(Environment::new());
+    let env = RefCell::new(Environment::new(None));
     loop {
         print!("{}", PROMPT);
         io::stdout().flush().expect("Failed to flush stdout");

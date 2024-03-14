@@ -155,24 +155,36 @@ impl ObjectTrait for Null {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Environment {
     store: HashMap<String, Object>,
+    outer: Option<Box<Environment>>,
 }
 
 impl Environment {
-    pub fn new() -> Environment {
+    pub fn new(outer: Option<Box<Environment>>) -> Environment {
         Environment {
             store: HashMap::new(),
+            outer,
         }
     }
 
     pub fn get(&self, name: &str) -> Result<Object, EvaluationError> {
         match self.store.get(name) {
             Some(value) => Ok(value.clone()),
-            None => Err(EvaluationError::IdentError(name.to_string())),
+            None => {
+                if self.outer.is_some() {
+                    Ok(self.outer.as_ref().unwrap().get(name)?)
+                } else {
+                    Err(EvaluationError::IdentError(name.to_string()))
+                }
+            }
         }
     }
 
     pub fn set(&mut self, name: &str, val: Object) -> Object {
         self.store.insert(name.to_string(), val.clone());
         val
+    }
+
+    pub fn new_enclosed_environment(outer: &mut Environment) -> Environment {
+        Environment::new(Some(Box::new(outer.clone())))
     }
 }

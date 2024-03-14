@@ -12,7 +12,7 @@ mod tests {
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
-        let env = RefCell::new(Environment::new());
+        let env = RefCell::new(Environment::new(None));
         let result = eval(program, &mut env.borrow_mut());
         result
     }
@@ -316,6 +316,16 @@ mod tests {
                 input: String::from("if (10 > 1) { if (10 > 1) { return 10; } return 1;}"),
                 expected: 10,
             },
+            Test {
+                input: String::from("let f = fn(x) { return x; x + 10; }; f(10);"),
+                expected: 10,
+            },
+            Test {
+                input: String::from(
+                    "let f = fn(x) { let result = x + 10; return result; return 10; }; f(10);",
+                ),
+                expected: 20,
+            },
         ];
         for test in tests {
             let evaluated = test_eval(&test.input).unwrap();
@@ -420,5 +430,49 @@ mod tests {
         assert_eq!(func.parameters.len(), 1);
         assert_eq!(func.parameters[0].value, "x");
         assert_eq!(format!("{}", func.body), "(x + 2)");
+    }
+
+    #[test]
+    fn test_function_application() {
+        struct Test {
+            input: String,
+            expected: i64,
+        }
+        let tests = vec![
+            Test {
+                input: String::from("let identity = fn(x) { x; }; identity(5);"),
+                expected: 5,
+            },
+            Test {
+                input: String::from("let identity = fn(x) { return x; }; identity(5);"),
+                expected: 5,
+            },
+            Test {
+                input: String::from("let double = fn(x) { x * 2; }; double(5);"),
+                expected: 10,
+            },
+            Test {
+                input: String::from("let add = fn(x, y) { x + y; }; add(5, 5);"),
+                expected: 10,
+            },
+            Test {
+                input: String::from("let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));"),
+                expected: 20,
+            },
+            Test {
+                input: String::from("fn(x) { x; }(5)"),
+                expected: 5,
+            },
+        ];
+        for test in tests {
+            test_integer_object(test_eval(&test.input).unwrap(), test.expected)
+        }
+    }
+
+    #[test]
+    fn test_closures() {
+        let input: &str =
+            "let newAdder = fn(x) { fn(y) { x + y }; }; let addTwo = newAdder(2); addTwo(2);";
+        test_integer_object(test_eval(input).unwrap(), 4)
     }
 }
