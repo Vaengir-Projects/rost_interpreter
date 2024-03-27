@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use rost_interpreter::lexer::Lexer;
-    use rost_interpreter::token::Token;
-    use rost_interpreter::token::TokenType;
+    use rost_interpreter::{
+        lexer::Lexer,
+        token::{Token, TokenType},
+    };
 
     #[test]
     fn test_lexer_symbols() {
@@ -78,8 +79,7 @@ mod tests {
 
     #[test]
     fn test_lexer_source_code() {
-        let input = "\
-let five = 5;
+        let input = r#"let five = 5;
 let ten = 10;
 
 let add = fn(x,y) {
@@ -97,7 +97,9 @@ if (5 < 10) {
 }
 
 10 == 10;
-10 != 9;";
+10 != 9;
+"foobar"
+"foo bar""#;
 
         let expected_tokens: Vec<Token> = vec![
             Token {
@@ -391,6 +393,14 @@ if (5 < 10) {
             Token {
                 r#type: TokenType::Semicolon,
                 literal: String::from(';'),
+            },
+            Token {
+                r#type: TokenType::String,
+                literal: String::from("foobar"),
+            },
+            Token {
+                r#type: TokenType::String,
+                literal: String::from("foo bar"),
             },
             Token {
                 r#type: TokenType::EOF,

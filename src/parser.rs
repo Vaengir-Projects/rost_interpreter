@@ -2,7 +2,7 @@ use crate::{
     ast::{
         BlockStatement, Boolean, CallExpression, Expression, ExpressionStatement, FunctionLiteral,
         Identifier, IfExpression, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression,
-        Program, ReturnStatement, Statement,
+        Program, ReturnStatement, Statement, StringLiteral,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -174,6 +174,10 @@ impl Parser {
             TokenType::Function => {
                 let f = self.parse_function_literal()?;
                 Ok(f)
+            }
+            TokenType::String => {
+                let s = self.parse_string_literal()?;
+                Ok(s)
             }
             _ => Err(ParserError::ExpressionError(format!(
                 "Prefix: The TokenType: {:?} has no function (yet)",
@@ -402,6 +406,13 @@ impl Parser {
             )));
         }
         Ok(args)
+    }
+
+    fn parse_string_literal(&mut self) -> Result<Expression, ParserError> {
+        Ok(Expression::StringLiteral(StringLiteral {
+            token: self.cur_token.clone(),
+            value: self.cur_token.literal.clone(),
+        }))
     }
 
     pub fn parse_program(&mut self) -> Result<Program, ParserError> {

@@ -42,4 +42,5 @@ pub enum TokenType {
     If,
     Else,
     Return,
+    String,
 }

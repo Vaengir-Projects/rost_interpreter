@@ -74,6 +74,7 @@ pub enum Expression {
     BlockStatement(BlockStatement),
     FunctionLiteral(FunctionLiteral),
     CallExpression(CallExpression),
+    StringLiteral(StringLiteral),
     Default,
 }
 
@@ -396,5 +397,27 @@ impl Display for CallExpression {
             .collect::<Vec<String>>()
             .join(", ");
         write!(f, "{}({})", self.token_literal(), arguments,)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StringLiteral {
+    pub token: Token,
+    pub value: String,
+}
+
+impl NodeTrait for StringLiteral {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+}
+
+impl ExpressionTrait for StringLiteral {
+    fn expression_node(&self) {}
+}
+
+impl Display for StringLiteral {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
     }
 }

@@ -78,6 +78,17 @@ impl Lexer {
         self.input[self.read_position]
     }
 
+    fn read_string(&mut self) -> String {
+        let position = self.position + 1;
+        loop {
+            self.read_char();
+            if self.char == '"' || self.char == '\0' {
+                break;
+            }
+        }
+        self.input[position..self.position].iter().collect()
+    }
+
     pub fn next_token(&mut self) -> Token {
         self.eat_whitespace();
         let token = match self.char {
@@ -114,6 +125,7 @@ impl Lexer {
             '/' => Token::build(TokenType::Slash, &self.char.to_string()),
             '<' => Token::build(TokenType::LT, &self.char.to_string()),
             '>' => Token::build(TokenType::GT, &self.char.to_string()),
+            '"' => Token::build(TokenType::String, &self.read_string()),
             '\0' => Token::build(TokenType::EOF, ""),
             _ => {
                 if self.char.is_alphabetic() || self.char == '_' {

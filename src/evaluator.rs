@@ -3,7 +3,9 @@ use crate::{
         BlockStatement, Expression, ExpressionStatement, Identifier, IfExpression, LetStatement,
         Program, ReturnStatement, Statement,
     },
-    object::{Boolean, Environment, Function, Integer, Object, ObjectTrait, ReturnValue},
+    object::{
+        Boolean, Environment, Function, Integer, Object, ObjectTrait, ReturnValue, StringObj,
+    },
 };
 use std::fmt::Display;
 
@@ -61,6 +63,9 @@ impl Eval for Expression {
                 let args = eval_expressions(&ce.arguments, env)?;
                 apply_function(function, &args)
             }
+            Expression::StringLiteral(s) => Ok(Object::String(StringObj {
+                value: s.value.clone(),
+            })),
             e => Err(EvaluationError::MatchError(format!(
                 "Missing implementation of eval on expression: {}",
                 e
@@ -189,6 +194,11 @@ fn eval_infix_expression(
             i.clone(),
             i2.clone(),
         )?),
+        (Object::String(s), Object::String(s2)) => Ok(eval_string_infix_expression(
+            operator,
+            s.clone(),
+            s2.clone(),
+        )?),
         _ => match operator {
             "==" => Ok(native_bool_to_bool_struct(left == right)),
             "!=" => Ok(native_bool_to_bool_struct(left != right)),
@@ -313,6 +323,24 @@ fn unwrap_return_value(object: Object) -> Object {
         return *rv.value;
     }
     object
+}
+
+fn eval_string_infix_expression(
+    operator: &str,
+    left: StringObj,
+    right: StringObj,
+) -> Result<Object, EvaluationError> {
+    if operator != "+" {
+        return Err(EvaluationError::OperatorError(format!(
+            "{} {} {}",
+            left.r#type(),
+            operator,
+            right.r#type()
+        )));
+    }
+    Ok(Object::String(StringObj {
+        value: left.value + &right.value,
+    }))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

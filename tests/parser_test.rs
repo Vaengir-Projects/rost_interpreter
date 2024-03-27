@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use rost_interpreter::{
-        ast::{Expression, NodeTrait, Program, Statement},
+        ast::{Expression, ExpressionStatement, NodeTrait, Program, Statement},
         lexer::Lexer,
         parser::Parser,
     };
@@ -854,5 +854,28 @@ mod tests {
         assert_eq!(third_left.value, 4);
         assert_eq!(third_arg.operator, "+");
         assert_eq!(third_right.value, 5);
+    }
+
+    #[test]
+    fn test_string_literal() {
+        let input = r#""hello world";"#;
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        let statement = match &program.statements[0] {
+            Statement::Expression(es) => es,
+            e => panic!(
+                "Not the right kind of Statement. Expected: Statement::Expression\nGot: {}",
+                e
+            ),
+        };
+        let literal = match &statement.expression {
+            Expression::StringLiteral(sl) => sl,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::StringLiteral\nGot: {}",
+                e
+            ),
+        };
+        assert_eq!(literal.value, String::from("hello world"));
     }
 }

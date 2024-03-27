@@ -379,6 +379,10 @@ mod tests {
                 input: String::from("foobar"),
                 expected_message: EvaluationError::IdentError(String::from("foobar")),
             },
+            Test {
+                input: String::from(r#""Hello" - "World""#),
+                expected_message: EvaluationError::OperatorError(String::from("STRING - STRING")),
+            },
         ];
         for test in tests {
             let evaluated = test_eval(&test.input);
@@ -425,7 +429,7 @@ mod tests {
         let evaluated = test_eval(input).unwrap();
         let func = match evaluated {
             Object::Function(f) => f,
-            e => panic!("Expected a Object:Function\nGot: {}", e),
+            e => panic!("Expected a Object::Function\nGot: {}", e),
         };
         assert_eq!(func.parameters.len(), 1);
         assert_eq!(func.parameters[0].value, "x");
@@ -474,5 +478,27 @@ mod tests {
         let input: &str =
             "let newAdder = fn(x) { fn(y) { x + y }; }; let addTwo = newAdder(2); addTwo(2);";
         test_integer_object(test_eval(input).unwrap(), 4)
+    }
+
+    #[test]
+    fn test_string_literal() {
+        let input = r#""Hello World!""#;
+        let evaluated = test_eval(&input).unwrap();
+        let str = match evaluated {
+            Object::String(s) => s,
+            e => panic!("Expected a Object::Function\nGot: {}", e),
+        };
+        assert_eq!(str.value, "Hello World!");
+    }
+
+    #[test]
+    fn test_string_concatenation() {
+        let input = r#""Hello" + " " + "World!""#;
+        let evaluated = test_eval(&input).unwrap();
+        let str = match evaluated {
+            Object::String(s) => s,
+            e => panic!("Expected a Object::Function\nGot: {}", e),
+        };
+        assert_eq!(str.value, String::from("Hello World!"));
     }
 }

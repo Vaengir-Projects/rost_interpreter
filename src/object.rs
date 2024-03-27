@@ -11,6 +11,7 @@ pub enum Object {
     PrefixExpression(PrefixExpression),
     ReturnValue(ReturnValue),
     Function(Function),
+    String(StringObj),
     Null,
 }
 
@@ -22,6 +23,7 @@ impl ObjectTrait for Object {
             Object::PrefixExpression(p) => p.r#type(),
             Object::ReturnValue(rv) => rv.r#type(),
             Object::Function(f) => f.r#type(),
+            Object::String(s) => s.r#type(),
             Object::Null => panic!("See if this ever happens"),
         }
     }
@@ -35,6 +37,7 @@ impl Display for Object {
             Object::PrefixExpression(p) => write!(f, "{}", p),
             Object::ReturnValue(rv) => write!(f, "{}", rv),
             Object::Function(func) => write!(f, "{}", func),
+            Object::String(s) => write!(f, "{}", s),
             Object::Null => write!(f, "null"),
         }
     }
@@ -134,6 +137,23 @@ impl Display for Function {
 impl ObjectTrait for Function {
     fn r#type(&self) -> String {
         String::from("FUNCTION")
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StringObj {
+    pub value: String,
+}
+
+impl Display for StringObj {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+impl ObjectTrait for StringObj {
+    fn r#type(&self) -> String {
+        String::from("STRING")
     }
 }
 
