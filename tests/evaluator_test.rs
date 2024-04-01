@@ -9,7 +9,7 @@ mod tests {
     use std::cell::RefCell;
 
     fn test_eval(input: &str) -> Result<Object, EvaluationError> {
-        let lexer = Lexer::new(&input);
+        let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         let env = RefCell::new(Environment::new(None));
@@ -377,7 +377,9 @@ mod tests {
             },
             Test {
                 input: String::from("foobar"),
-                expected_message: EvaluationError::IdentError(String::from("foobar")),
+                expected_message: EvaluationError::IdentError(String::from(
+                    "Identifier not found: foobar",
+                )),
             },
             Test {
                 input: String::from(r#""Hello" - "World""#),
@@ -483,7 +485,7 @@ mod tests {
     #[test]
     fn test_string_literal() {
         let input = r#""Hello World!""#;
-        let evaluated = test_eval(&input).unwrap();
+        let evaluated = test_eval(input).unwrap();
         let str = match evaluated {
             Object::String(s) => s,
             e => panic!("Expected a Object::Function\nGot: {}", e),
@@ -494,11 +496,55 @@ mod tests {
     #[test]
     fn test_string_concatenation() {
         let input = r#""Hello" + " " + "World!""#;
-        let evaluated = test_eval(&input).unwrap();
+        let evaluated = test_eval(input).unwrap();
         let str = match evaluated {
             Object::String(s) => s,
             e => panic!("Expected a Object::Function\nGot: {}", e),
         };
         assert_eq!(str.value, String::from("Hello World!"));
+    }
+
+    #[test]
+    fn test_builtin_functions() {
+        #[derive(Debug)]
+        struct Test {
+            input: String,
+            expected: Result<i64, EvaluationError>,
+        }
+        let tests = vec![
+            Test {
+                input: String::from(r#"len("")"#),
+                expected: Ok(0),
+            },
+            Test {
+                input: String::from(r#"len("four")"#),
+                expected: Ok(4),
+            },
+            Test {
+                input: String::from(r#"len("hello world")"#),
+                expected: Ok(11),
+            },
+            Test {
+                input: String::from(r#"len(1)"#),
+                expected: Err(EvaluationError::BuiltInError(String::from(
+                    "Wrong kind of argument.\nExpected: String\nGot: INTEGER",
+                ))),
+            },
+            Test {
+                input: String::from(r#"len("one", "two")"#),
+                expected: Err(EvaluationError::BuiltInError(String::from(
+                    "Wrong number of arguments.\nExpected: 1\nGot: 2",
+                ))),
+            },
+        ];
+        for test in tests {
+            let evaluated = test_eval(&test.input);
+            match test.expected {
+                Ok(i) => test_integer_object(evaluated.unwrap(), i),
+                Err(e) => {
+                    assert_eq!(evaluated, Err(e));
+                }
+            }
+        }
     }
 }

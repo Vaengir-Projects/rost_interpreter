@@ -1,5 +1,6 @@
 use crate::{
     ast::{BlockStatement, Identifier},
+    builtins::BuiltInFunction,
     evaluator::EvaluationError,
 };
 use std::{collections::HashMap, fmt::Display};
@@ -12,6 +13,7 @@ pub enum Object {
     ReturnValue(ReturnValue),
     Function(Function),
     String(StringObj),
+    BuiltIn(BuiltIn),
     Null,
 }
 
@@ -24,6 +26,7 @@ impl ObjectTrait for Object {
             Object::ReturnValue(rv) => rv.r#type(),
             Object::Function(f) => f.r#type(),
             Object::String(s) => s.r#type(),
+            Object::BuiltIn(bi) => bi.r#type(),
             Object::Null => panic!("See if this ever happens"),
         }
     }
@@ -38,6 +41,7 @@ impl Display for Object {
             Object::ReturnValue(rv) => write!(f, "{}", rv),
             Object::Function(func) => write!(f, "{}", func),
             Object::String(s) => write!(f, "{}", s),
+            Object::BuiltIn(bi) => write!(f, "{}", bi),
             Object::Null => write!(f, "null"),
         }
     }
@@ -154,6 +158,23 @@ impl Display for StringObj {
 impl ObjectTrait for StringObj {
     fn r#type(&self) -> String {
         String::from("STRING")
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BuiltIn {
+    pub func: BuiltInFunction,
+}
+
+impl Display for BuiltIn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "builtin function",)
+    }
+}
+
+impl ObjectTrait for BuiltIn {
+    fn r#type(&self) -> String {
+        String::from("BUILTIN")
     }
 }
 

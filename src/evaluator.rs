@@ -3,6 +3,7 @@ use crate::{
         BlockStatement, Expression, ExpressionStatement, Identifier, IfExpression, LetStatement,
         Program, ReturnStatement, Statement,
     },
+    builtins::is_builtin,
     object::{
         Boolean, Environment, Function, Integer, Object, ObjectTrait, ReturnValue, StringObj,
     },
@@ -280,7 +281,16 @@ fn eval_block_statement(
 }
 
 fn eval_identifier(node: &Identifier, env: &mut Environment) -> Result<Object, EvaluationError> {
-    env.get(&node.value)
+    if let Ok(val) = env.get(&node.value) {
+        return Ok(val);
+    }
+    if let Ok(builtin) = is_builtin(node.clone()) {
+        return Ok(builtin);
+    }
+    Err(EvaluationError::IdentError(format!(
+        "Identifier not found: {}",
+        &node.value
+    )))
 }
 
 fn eval_expressions(
@@ -296,18 +306,20 @@ fn eval_expressions(
 }
 
 fn apply_function(func: Object, args: &[Object]) -> Result<Object, EvaluationError> {
-    let func = match func {
-        Object::Function(f) => f,
+    match func {
+        Object::Function(func) => {
+            let mut extended_env = extend_function_env(func.clone(), args);
+            let evaluated = eval(func.body, &mut extended_env)?;
+            Ok(unwrap_return_value(evaluated))
+        }
+        Object::BuiltIn(bi) => bi.run_builtin(args),
         e => {
-            return Err(EvaluationError::Function(format!(
-                "Expected an Object::Function\nGot: {}",
+            Err(EvaluationError::Function(format!(
+                "Expected an Object::Function or Object::BuiltIn\nGot: {}",
                 e
             )))
         }
-    };
-    let mut extended_env = extend_function_env(func.clone(), args);
-    let evaluated = eval(func.body, &mut extended_env)?;
-    Ok(unwrap_return_value(evaluated))
+    }
 }
 
 fn extend_function_env(func: Function, args: &[Object]) -> Environment {
@@ -350,6 +362,7 @@ pub enum EvaluationError {
     IdentError(String),
     Function(String),
     MatchError(String),
+    BuiltInError(String),
 }
 
 impl Display for EvaluationError {
@@ -360,6 +373,7 @@ impl Display for EvaluationError {
             EvaluationError::IdentError(i) => write!(f, "Identifier not found: {}", i),
             EvaluationError::Function(func) => write!(f, "Not a function: {}", func),
             EvaluationError::MatchError(m) => write!(f, "MatchError: {}", m),
+            EvaluationError::BuiltInError(bi) => write!(f, "BuiltInError: {}", bi),
         }
     }
 }

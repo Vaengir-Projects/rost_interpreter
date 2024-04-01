@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use rost_interpreter::{
-        ast::{Expression, ExpressionStatement, NodeTrait, Program, Statement},
+        ast::{Expression, NodeTrait, Program, Statement},
         lexer::Lexer,
         parser::Parser,
     };
@@ -561,7 +561,7 @@ mod tests {
     #[test]
     fn test_if_expression() {
         let input = "if (x < y) { x }";
-        let lexer = Lexer::new(&input);
+        let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         dbg!(&program);
@@ -621,7 +621,7 @@ mod tests {
     #[test]
     fn test_if_else_expression() {
         let input = "if (x < y) { x } else { y }";
-        let lexer = Lexer::new(&input);
+        let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         dbg!(&program);
@@ -702,7 +702,7 @@ mod tests {
     #[test]
     fn test_function_literal() {
         let input = "fn(x, y) { x + y; }";
-        let lexer = Lexer::new(&input);
+        let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         dbg!(&program);
@@ -760,7 +760,7 @@ mod tests {
     #[test]
     fn test_call_expression() {
         let input = "add(1, 2 * 3, 4 + 5);";
-        let lexer = Lexer::new(&input);
+        let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         dbg!(&program);
@@ -859,7 +859,7 @@ mod tests {
     #[test]
     fn test_string_literal() {
         let input = r#""hello world";"#;
-        let lexer = Lexer::new(&input);
+        let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         let statement = match &program.statements[0] {
