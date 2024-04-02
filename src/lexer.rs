@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use crate::token::{Token, TokenType};
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Lexer {
@@ -108,6 +107,8 @@ impl Lexer {
             '+' => Token::build(TokenType::Plus, &self.char.to_string()),
             '{' => Token::build(TokenType::LBrace, &self.char.to_string()),
             '}' => Token::build(TokenType::RBrace, &self.char.to_string()),
+            '[' => Token::build(TokenType::LBracket, &self.char.to_string()),
+            ']' => Token::build(TokenType::RBracket, &self.char.to_string()),
             '-' => Token::build(TokenType::Minus, &self.char.to_string()),
             '!' => {
                 if self.peek_char() == '=' {
@@ -132,7 +133,7 @@ impl Lexer {
                     let literal = self.read_identifier();
                     return Token::build(self.loop_up_ident(&literal), &literal);
                 } else if self.char.is_ascii_digit() {
-                    return Token::build(TokenType::INT, &self.read_number());
+                    return Token::build(TokenType::Int, &self.read_number());
                 } else {
                     Token::build(TokenType::Illegal, &self.char.to_string())
                 }

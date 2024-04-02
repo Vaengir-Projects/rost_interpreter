@@ -99,7 +99,8 @@ if (5 < 10) {
 10 == 10;
 10 != 9;
 "foobar"
-"foo bar""#;
+"foo bar"
+[1,2];"#;
 
         let expected_tokens: Vec<Token> = vec![
             Token {
@@ -115,7 +116,7 @@ if (5 < 10) {
                 literal: String::from('='),
             },
             Token {
-                r#type: TokenType::INT,
+                r#type: TokenType::Int,
                 literal: String::from("5"),
             },
             Token {
@@ -135,7 +136,7 @@ if (5 < 10) {
                 literal: String::from('='),
             },
             Token {
-                r#type: TokenType::INT,
+                r#type: TokenType::Int,
                 literal: String::from("10"),
             },
             Token {
@@ -263,7 +264,7 @@ if (5 < 10) {
                 literal: String::from('*'),
             },
             Token {
-                r#type: TokenType::INT,
+                r#type: TokenType::Int,
                 literal: String::from("5"),
             },
             Token {
@@ -271,7 +272,7 @@ if (5 < 10) {
                 literal: String::from(';'),
             },
             Token {
-                r#type: TokenType::INT,
+                r#type: TokenType::Int,
                 literal: String::from("5"),
             },
             Token {
@@ -279,7 +280,7 @@ if (5 < 10) {
                 literal: String::from('<'),
             },
             Token {
-                r#type: TokenType::INT,
+                r#type: TokenType::Int,
                 literal: String::from("10"),
             },
             Token {
@@ -287,7 +288,7 @@ if (5 < 10) {
                 literal: String::from('>'),
             },
             Token {
-                r#type: TokenType::INT,
+                r#type: TokenType::Int,
                 literal: String::from("5"),
             },
             Token {
@@ -303,7 +304,7 @@ if (5 < 10) {
                 literal: String::from('('),
             },
             Token {
-                r#type: TokenType::INT,
+                r#type: TokenType::Int,
                 literal: String::from("5"),
             },
             Token {
@@ -311,7 +312,7 @@ if (5 < 10) {
                 literal: String::from('<'),
             },
             Token {
-                r#type: TokenType::INT,
+                r#type: TokenType::Int,
                 literal: String::from("10"),
             },
             Token {
@@ -363,7 +364,7 @@ if (5 < 10) {
                 literal: String::from('}'),
             },
             Token {
-                r#type: TokenType::INT,
+                r#type: TokenType::Int,
                 literal: String::from("10"),
             },
             Token {
@@ -371,7 +372,7 @@ if (5 < 10) {
                 literal: String::from("=="),
             },
             Token {
-                r#type: TokenType::INT,
+                r#type: TokenType::Int,
                 literal: String::from("10"),
             },
             Token {
@@ -379,7 +380,7 @@ if (5 < 10) {
                 literal: String::from(';'),
             },
             Token {
-                r#type: TokenType::INT,
+                r#type: TokenType::Int,
                 literal: String::from("10"),
             },
             Token {
@@ -387,7 +388,7 @@ if (5 < 10) {
                 literal: String::from("!="),
             },
             Token {
-                r#type: TokenType::INT,
+                r#type: TokenType::Int,
                 literal: String::from("9"),
             },
             Token {
@@ -401,6 +402,30 @@ if (5 < 10) {
             Token {
                 r#type: TokenType::String,
                 literal: String::from("foo bar"),
+            },
+            Token {
+                r#type: TokenType::LBracket,
+                literal: String::from('['),
+            },
+            Token {
+                r#type: TokenType::Int,
+                literal: String::from("1"),
+            },
+            Token {
+                r#type: TokenType::Comma,
+                literal: String::from(','),
+            },
+            Token {
+                r#type: TokenType::Int,
+                literal: String::from("2"),
+            },
+            Token {
+                r#type: TokenType::RBracket,
+                literal: String::from(']'),
+            },
+            Token {
+                r#type: TokenType::Semicolon,
+                literal: String::from(';'),
             },
             Token {
                 r#type: TokenType::EOF,

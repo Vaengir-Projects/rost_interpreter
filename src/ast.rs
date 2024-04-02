@@ -75,6 +75,7 @@ pub enum Expression {
     FunctionLiteral(FunctionLiteral),
     CallExpression(CallExpression),
     StringLiteral(StringLiteral),
+    ArrayLiteral(ArrayLiteral),
     Default,
 }
 
@@ -419,5 +420,33 @@ impl ExpressionTrait for StringLiteral {
 impl Display for StringLiteral {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ArrayLiteral {
+    pub token: Token,
+    pub elements: Vec<Expression>,
+}
+
+impl NodeTrait for ArrayLiteral {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+}
+
+impl ExpressionTrait for ArrayLiteral {
+    fn expression_node(&self) {}
+}
+
+impl Display for ArrayLiteral {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let elements = self
+            .elements
+            .iter()
+            .map(|p| p.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+        write!(f, "[{}]", elements)
     }
 }

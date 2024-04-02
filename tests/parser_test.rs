@@ -878,4 +878,50 @@ mod tests {
         };
         assert_eq!(literal.value, String::from("hello world"));
     }
+
+    #[test]
+    fn test_parsing_arrayliterals() {
+        let input = "[1, 2 * 2, 3 + 3]";
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        let statement = match &program.statements[0] {
+            Statement::Expression(es) => es,
+            e => panic!(
+                "Not the right kind of Statement. Expected: Statement::Expression\nGot: {}",
+                e
+            ),
+        };
+        let array = match &statement.expression {
+            Expression::ArrayLiteral(al) => al,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::ArrayLiteral\nGot: {}",
+                e
+            ),
+        };
+        if array.elements.len() != 3 {
+            panic!("Expected 3 Elements\nGot: {}", array.elements.len())
+        }
+        assert!(test_integer_literal(array.elements[0].clone(), 1));
+        let second_element = match array.elements[1].clone() {
+            Expression::InfixExpression(ie) => ie,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::InfixExpression\nGot: {}",
+                e
+            ),
+        };
+        assert!(test_integer_literal(*second_element.left.clone(), 2));
+        assert_eq!(second_element.operator, "*");
+        assert!(test_integer_literal(*second_element.right.clone(), 2));
+        let third_element = match array.elements[2].clone() {
+            Expression::InfixExpression(ie) => ie,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::InfixExpression\nGot: {}",
+                e
+            ),
+        };
+        assert!(test_integer_literal(*third_element.left.clone(), 3));
+        assert_eq!(third_element.operator, "+");
+        assert!(test_integer_literal(*third_element.right.clone(), 3));
+    }
 }
