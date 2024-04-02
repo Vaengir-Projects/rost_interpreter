@@ -432,7 +432,6 @@ impl Parser {
         self.next_token();
         self.next_token();
         let index = Box::new(self.parse_expression(LOWEST)?);
-        dbg!(&token, &left, &index);
         if !self.expect_peek(&TokenType::RBracket) {
             return Err(ParserError::ExpressionError(format!(
                 "Next TokenType should be 'RBracket'\nGot: Peek: {:?} - Cur: {:?}",
