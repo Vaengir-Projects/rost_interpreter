@@ -1,8 +1,9 @@
 use crate::{
     ast::{
         ArrayLiteral, BlockStatement, Boolean, CallExpression, Expression, ExpressionStatement,
-        FunctionLiteral, Identifier, IfExpression, InfixExpression, IntegerLiteral, LetStatement,
-        PrefixExpression, Program, ReturnStatement, Statement, StringLiteral,
+        FunctionLiteral, Identifier, IfExpression, IndexExpression, InfixExpression,
+        IntegerLiteral, LetStatement, PrefixExpression, Program, ReturnStatement, Statement,
+        StringLiteral,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -16,6 +17,7 @@ const SUM: u8 = 4;
 const PRODUCT: u8 = 5;
 const PREFIX: u8 = 6;
 const CALL: u8 = 7;
+const INDEX: u8 = 8;
 
 pub struct Parser {
     lexer: Lexer,
@@ -66,6 +68,7 @@ impl Parser {
             TokenType::Slash => PRODUCT,
             TokenType::Asterisk => PRODUCT,
             TokenType::LParen => CALL,
+            TokenType::LBracket => INDEX,
             _ => LOWEST,
         }
     }
@@ -206,6 +209,10 @@ impl Parser {
                 TokenType::LParen => {
                     let c = self.parse_call_expression(left_expression.clone())?;
                     Ok(c)
+                }
+                TokenType::LBracket => {
+                    let ie = self.parse_index_expression(left_expression.clone())?;
+                    Ok(ie)
                 }
                 _ => {
                     return Err(ParserError::InfixExpression(format!(
@@ -417,6 +424,26 @@ impl Parser {
             )));
         }
         Ok(list)
+    }
+
+    fn parse_index_expression(&mut self, left: Expression) -> Result<Expression, ParserError> {
+        let token = self.cur_token.clone();
+        let left = Box::new(left);
+        self.next_token();
+        self.next_token();
+        let index = Box::new(self.parse_expression(LOWEST)?);
+        dbg!(&token, &left, &index);
+        if !self.expect_peek(&TokenType::RBracket) {
+            return Err(ParserError::ExpressionError(format!(
+                "Next TokenType should be 'RBracket'\nGot: Peek: {:?} - Cur: {:?}",
+                self.peek_token, self.cur_token
+            )));
+        }
+        Ok(Expression::IndexExpression(IndexExpression {
+            token,
+            left,
+            index,
+        }))
     }
 
     pub fn parse_program(&mut self) -> Result<Program, ParserError> {

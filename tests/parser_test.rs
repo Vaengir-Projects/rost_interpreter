@@ -487,13 +487,21 @@ mod tests {
                 input: String::from("add(a + b + c * d / f + g)"),
                 expected: String::from("add((((a + b) + ((c * d) / f)) + g))"),
             },
+            Test {
+                input: String::from("a * [1, 2, 3, 4][b * c] * d"),
+                expected: String::from("((a * ([1, 2, 3, 4][(b * c)])) * d)"),
+            },
+            Test {
+                input: String::from("add(a * b[2], b[1], 2 * [1, 2][1])"),
+                expected: String::from("add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"),
+            },
         ];
 
         for test in tests {
             let lexer = Lexer::new(&test.input);
             let mut parser = Parser::new(lexer);
             let program = parser.parse_program().unwrap();
-            dbg!(&program);
+            // dbg!(&program);
             assert_eq!(format!("{}", program), test.expected);
         }
     }
@@ -880,7 +888,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parsing_arrayliterals() {
+    fn test_parsing_array_literals() {
         let input = "[1, 2 * 2, 3 + 3]";
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
@@ -923,5 +931,45 @@ mod tests {
         assert!(test_integer_literal(*third_element.left.clone(), 3));
         assert_eq!(third_element.operator, "+");
         assert!(test_integer_literal(*third_element.right.clone(), 3));
+    }
+
+    #[test]
+    fn test_parsing_index_expressions() {
+        let input = "myArray[1+1]";
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        let statement = match &program.statements[0] {
+            Statement::Expression(es) => es,
+            e => panic!(
+                "Not the right kind of Statement. Expected: Statement::Expression\nGot: {}",
+                e
+            ),
+        };
+        let index_expr = match &statement.expression {
+            Expression::IndexExpression(ie) => ie,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::IndexExpression\nGot: {}",
+                e
+            ),
+        };
+        let index_ident = match *index_expr.left.clone() {
+            Expression::Identifier(i) => i,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::IndexExpression\nGot: {}",
+                e
+            ),
+        };
+        assert_eq!(index_ident.value, String::from("myArray"));
+        let index = match *index_expr.index.clone() {
+            Expression::InfixExpression(ie) => ie,
+            e => panic!(
+                "Not the right kind of Expression. Expected: Expression::InfixExpression\nGot: {}",
+                e
+            ),
+        };
+        assert!(test_integer_literal(*index.left.clone(), 1));
+        assert_eq!(index.operator, "+");
+        assert!(test_integer_literal(*index.right.clone(), 1));
     }
 }

@@ -76,6 +76,7 @@ pub enum Expression {
     CallExpression(CallExpression),
     StringLiteral(StringLiteral),
     ArrayLiteral(ArrayLiteral),
+    IndexExpression(IndexExpression),
     Default,
 }
 
@@ -90,6 +91,8 @@ impl Display for Expression {
             Expression::IfExpression(i) => write!(f, "{}", i),
             Expression::FunctionLiteral(fl) => write!(f, "{}", fl),
             Expression::CallExpression(c) => write!(f, "{}", c),
+            Expression::ArrayLiteral(al) => write!(f, "{}", al),
+            Expression::IndexExpression(ie) => write!(f, "{}", ie),
             _ => write!(f, "Default"),
         }
     }
@@ -448,5 +451,28 @@ impl Display for ArrayLiteral {
             .collect::<Vec<String>>()
             .join(", ");
         write!(f, "[{}]", elements)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IndexExpression {
+    pub token: Token,
+    pub left: Box<Expression>,
+    pub index: Box<Expression>,
+}
+
+impl NodeTrait for IndexExpression {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+}
+
+impl ExpressionTrait for IndexExpression {
+    fn expression_node(&self) {}
+}
+
+impl Display for IndexExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}[{}])", self.left, self.index)
     }
 }
