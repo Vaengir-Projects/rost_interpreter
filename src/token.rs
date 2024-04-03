@@ -1,6 +1,6 @@
 use anyhow::Context;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenType {
     Illegal,
     EOF,
@@ -8,14 +8,27 @@ pub enum TokenType {
     Int,
     Assign,
     Plus,
+    Minus,
+    Bang,
+    Asterisk,
+    Slash,
+    LessThan,
+    GreaterThan,
     Comma,
     Semicolon,
     LParen,
     RParen,
     LBrace,
     RBrace,
+    Eq,
+    NotEq,
     Function,
     Let,
+    True,
+    False,
+    If,
+    Else,
+    Return,
 }
 
 #[derive(Debug, PartialEq, Eq)]
