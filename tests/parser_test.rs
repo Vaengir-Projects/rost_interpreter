@@ -1,7 +1,7 @@
 use rost_interpreter::{
     ast::{
-        ExpressionStatement, Identifier, IntegerLiteral, LetStatement, Node, ReturnStatement,
-        Statement,
+        Expression, ExpressionStatement, Identifier, IntegerLiteral, LetStatement, Node,
+        PrefixExpression, ReturnStatement, Statement,
     },
     lexer::Lexer,
     parser::Parser,
@@ -14,6 +14,15 @@ fn test_let_statement(statement: &dyn Statement, name: &str) {
         assert_eq!(statement.name.token_literal(), name);
     } else {
         panic!("Expected: LetStatement\nGot: {:?}", statement);
+    }
+}
+
+fn test_integer_literal(integer_expression: &dyn Expression, value: i64) {
+    if let Some(integer_literal) = integer_expression.as_any().downcast_ref::<IntegerLiteral>() {
+        assert_eq!(integer_literal.value, value);
+        assert_eq!(integer_literal.token_literal(), value.to_string());
+    } else {
+        panic!("Expected: IntegerLiteral\nGot: {:?}", integer_expression);
     }
 }
 
@@ -154,11 +163,7 @@ fn test_parsing_prefix_expressions() {
                 .downcast_ref::<PrefixExpression>()
             {
                 assert_eq!(prefix_expression.operator, test.operator);
-                assert_eq!(prefix_expression.value, test.integer_value);
-                assert_eq!(
-                    prefix_expression.token_literal(),
-                    test.integer_value.to_string()
-                );
+                test_integer_literal(&*prefix_expression.right, test.integer_value);
             } else {
                 panic!(
                     "Expected: PrefixExpression\nGot: {:?}",

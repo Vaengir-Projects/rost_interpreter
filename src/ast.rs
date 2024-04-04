@@ -166,3 +166,28 @@ impl Display for IntegerLiteral {
 }
 
 impl Expression for IntegerLiteral {}
+
+#[derive(Debug)]
+pub struct PrefixExpression {
+    pub token: Token,
+    pub operator: u8,
+    pub right: Box<dyn Expression>,
+}
+
+impl Node for PrefixExpression {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl Display for PrefixExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}{})", self.operator, self.right)
+    }
+}
+
+impl Expression for PrefixExpression {}
