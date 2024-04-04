@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-
 use crate::token::{Token, TokenType};
 use anyhow::{anyhow, Context};
+use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Lexer {
     input: Vec<u8>,
     position: usize,
