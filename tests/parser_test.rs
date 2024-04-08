@@ -1,7 +1,7 @@
 use rost_interpreter::{
     ast::{
-        Expression, ExpressionStatement, Identifier, IntegerLiteral, LetStatement, Node,
-        PrefixExpression, ReturnStatement, Statement,
+        Boolean, Expression, ExpressionStatement, Identifier, InfixExpression, IntegerLiteral,
+        LetStatement, Node, PrefixExpression, ReturnStatement, Statement,
     },
     lexer::Lexer,
     parser::Parser,
@@ -164,6 +164,269 @@ fn test_parsing_prefix_expressions() {
             {
                 assert_eq!(prefix_expression.operator, test.operator);
                 test_integer_literal(&*prefix_expression.right, test.integer_value);
+            } else {
+                panic!(
+                    "Expected: PrefixExpression\nGot: {:?}",
+                    expression_statement
+                );
+            }
+        } else {
+            panic!(
+                "Expected: ExpressionStatement\nGot: {:?}",
+                program.statements[0]
+            );
+        }
+    }
+}
+
+#[test]
+fn test_parsing_infix_expression() {
+    #[derive(Debug)]
+    struct Test {
+        input: Vec<u8>,
+        left_value: i64,
+        operator: Vec<u8>,
+        right_value: i64,
+    }
+    let tests = vec![
+        Test {
+            input: b"5 + 5;".to_vec(),
+            left_value: 5,
+            operator: b"+".to_vec(),
+            right_value: 5,
+        },
+        Test {
+            input: b"5 - 5;".to_vec(),
+            left_value: 5,
+            operator: b"-".to_vec(),
+            right_value: 5,
+        },
+        Test {
+            input: b"5 * 5;".to_vec(),
+            left_value: 5,
+            operator: b"*".to_vec(),
+            right_value: 5,
+        },
+        Test {
+            input: b"5 / 5;".to_vec(),
+            left_value: 5,
+            operator: b"/".to_vec(),
+            right_value: 5,
+        },
+        Test {
+            input: b"5 > 5;".to_vec(),
+            left_value: 5,
+            operator: b">".to_vec(),
+            right_value: 5,
+        },
+        Test {
+            input: b"5 < 5;".to_vec(),
+            left_value: 5,
+            operator: b"<".to_vec(),
+            right_value: 5,
+        },
+        Test {
+            input: b"5 == 5;".to_vec(),
+            left_value: 5,
+            operator: b"==".to_vec(),
+            right_value: 5,
+        },
+        Test {
+            input: b"5 != 5;".to_vec(),
+            left_value: 5,
+            operator: b"!=".to_vec(),
+            right_value: 5,
+        },
+    ];
+
+    for test in tests {
+        let lexer = Lexer::new(&test.input);
+        let mut parser = Parser::new(lexer).unwrap();
+        let program = parser.parse_program().unwrap();
+
+        assert_eq!(program.statements.len(), 1);
+        if let Some(expression_statement) = program.statements[0]
+            .as_any()
+            .downcast_ref::<ExpressionStatement>()
+        {
+            if let Some(inifix_expression) = expression_statement
+                .expression
+                .as_any()
+                .downcast_ref::<InfixExpression>()
+            {
+                assert_eq!(inifix_expression.operator, test.operator);
+                test_integer_literal(&*inifix_expression.left, test.left_value);
+                test_integer_literal(&*inifix_expression.right, test.right_value);
+            } else {
+                panic!(
+                    "Expected: PrefixExpression\nGot: {:?}",
+                    expression_statement
+                );
+            }
+        } else {
+            panic!(
+                "Expected: ExpressionStatement\nGot: {:?}",
+                program.statements[0]
+            );
+        }
+    }
+}
+
+#[test]
+fn test_operator_precedence_parsing() {
+    struct Test {
+        input: Vec<u8>,
+        expected: String,
+    }
+    let tests: Vec<Test> = vec![
+        Test {
+            input: b"-a * b".to_vec(),
+            expected: String::from("((-a) * b)"),
+        },
+        Test {
+            input: b"!-a".to_vec(),
+            expected: String::from("(!(-a))"),
+        },
+        Test {
+            input: b"a + b + c".to_vec(),
+            expected: String::from("((a + b) + c)"),
+        },
+        Test {
+            input: b"a + b - c".to_vec(),
+            expected: String::from("((a + b) - c)"),
+        },
+        Test {
+            input: b"a * b * c".to_vec(),
+            expected: String::from("((a * b) * c)"),
+        },
+        Test {
+            input: b"a * b / c".to_vec(),
+            expected: String::from("((a * b) / c)"),
+        },
+        Test {
+            input: b"a + b / c".to_vec(),
+            expected: String::from("(a + (b / c))"),
+        },
+        Test {
+            input: b"a + b * c + d / e - f".to_vec(),
+            expected: String::from("(((a + (b * c)) + (d / e)) - f)"),
+        },
+        Test {
+            input: b"3 + 4; -5 * 5".to_vec(),
+            expected: String::from("(3 + 4)((-5) * 5)"),
+        },
+        Test {
+            input: b"5 > 4 == 3 < 4".to_vec(),
+            expected: String::from("((5 > 4) == (3 < 4))"),
+        },
+        Test {
+            input: b"5 < 4 != 3 > 4".to_vec(),
+            expected: String::from("((5 < 4) != (3 > 4))"),
+        },
+        Test {
+            input: b"3 + 4 * 5 == 3 * 1 + 4 * 5".to_vec(),
+            expected: String::from("((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"),
+        },
+        Test {
+            input: b"true".to_vec(),
+            expected: String::from("true"),
+        },
+        Test {
+            input: b"false".to_vec(),
+            expected: String::from("false"),
+        },
+        Test {
+            input: b"3 > 5 == false".to_vec(),
+            expected: String::from("((3 > 5) == false)"),
+        },
+        Test {
+            input: b"3 < 5 == true".to_vec(),
+            expected: String::from("((3 < 5) == true)"),
+        },
+        // Test {
+        //     input: b"1 + (2 + 3) + 4".to_vec(),
+        //     expected: String::from("((1 + (2 + 3)) + 4)"),
+        // },
+        // Test {
+        //     input: b"(5 + 5) * 2".to_vec(),
+        //     expected: String::from("((5 + 5) * 2)"),
+        // },
+        // Test {
+        //     input: b"2 / (5 + 5)".to_vec(),
+        //     expected: String::from("(2 / (5 + 5))"),
+        // },
+        // Test {
+        //     input: b"-(5 + 5)".to_vec(),
+        //     expected: String::from("(-(5 + 5))"),
+        // },
+        // Test {
+        //     input: b"!(true == true)".to_vec(),
+        //     expected: String::from("(!(true == true))"),
+        // },
+        // Test {
+        //     input: b"a + add(b * c) + d".to_vec(),
+        //     expected: String::from("((a + add((b * c))) + d)"),
+        // },
+        // Test {
+        //     input: b"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))".to_vec(),
+        //     expected: String::from("add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"),
+        // },
+        // Test {
+        //     input: b"add(a + b + c * d / f + g)".to_vec(),
+        //     expected: String::from("add((((a + b) + ((c * d) / f)) + g))"),
+        // },
+        // Test {
+        //     input: b"a * [1, 2, 3, 4][b * c] * d".to_vec(),
+        //     expected: String::from("((a * ([1, 2, 3, 4][(b * c)])) * d)"),
+        // },
+        // Test {
+        //     input: b"add(a * b[2], b[1], 2 * [1, 2][1])".to_vec(),
+        //     expected: String::from("add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"),
+        // },
+    ];
+
+    for test in tests {
+        let lexer = Lexer::new(&test.input);
+        let mut parser = Parser::new(lexer).unwrap();
+        let program = parser.parse_program().unwrap();
+        dbg!(format!("{}", &program));
+        assert_eq!(format!("{}", program), test.expected);
+    }
+}
+
+#[test]
+fn test_boolean_expression() {
+    struct Test {
+        input: Vec<u8>,
+        expected: bool,
+    }
+    let tests: Vec<Test> = vec![
+        Test {
+            input: b"true;".to_vec(),
+            expected: true,
+        },
+        Test {
+            input: b"false;".to_vec(),
+            expected: false,
+        },
+    ];
+
+    for test in tests {
+        let lexer = Lexer::new(&test.input);
+        let mut parser = Parser::new(lexer).unwrap();
+        let program = parser.parse_program().unwrap();
+
+        assert_eq!(program.statements.len(), 1);
+        if let Some(expression_statement) = program.statements[0]
+            .as_any()
+            .downcast_ref::<ExpressionStatement>()
+        {
+            if let Some(boolean) = expression_statement
+                .expression
+                .as_any()
+                .downcast_ref::<Boolean>()
+            {
+                assert_eq!(boolean.value, test.expected);
             } else {
                 panic!(
                     "Expected: PrefixExpression\nGot: {:?}",
