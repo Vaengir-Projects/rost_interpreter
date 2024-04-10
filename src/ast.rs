@@ -248,3 +248,100 @@ impl Display for Boolean {
 }
 
 impl Expression for Boolean {}
+
+#[derive(Debug)]
+pub struct IfExpression {
+    pub token: Token,
+    pub condition: Box<dyn Expression>,
+    pub consequence: BlockStatement,
+    pub alternative: Option<BlockStatement>,
+}
+
+impl Node for IfExpression {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl Display for IfExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.alternative {
+            Some(alternative) => write!(
+                f,
+                "if {} {} else {}",
+                self.condition, self.consequence, alternative
+            ),
+            None => write!(f, "if {} {}", self.condition, self.consequence),
+        }
+    }
+}
+
+impl Expression for IfExpression {}
+
+#[derive(Debug)]
+pub struct BlockStatement {
+    pub token: Token,
+    pub statements: Vec<Box<dyn Statement>>,
+}
+
+impl Node for BlockStatement {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl Display for BlockStatement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for statement in &self.statements {
+            write!(f, "{}", statement)?;
+        }
+        Ok(())
+    }
+}
+
+impl Expression for BlockStatement {}
+
+#[derive(Debug)]
+pub struct FunctionLiteral {
+    pub token: Token,
+    pub parameters: Vec<Identifier>,
+    pub body: BlockStatement,
+}
+
+impl Node for FunctionLiteral {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl Display for FunctionLiteral {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let parameters = self
+            .parameters
+            .iter()
+            .map(|p| p.value.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+        write!(
+            f,
+            "Here: {}({}) {}",
+            self.token_literal(),
+            parameters,
+            self.body
+        )
+    }
+}
+
+impl Expression for FunctionLiteral {}
