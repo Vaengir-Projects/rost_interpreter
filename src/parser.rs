@@ -1,8 +1,8 @@
 use crate::{
     ast::{
-        BlockStatement, Boolean, Expression, ExpressionStatement, FunctionLiteral, Identifier,
-        IfExpression, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression, Program,
-        ReturnStatement, Statement,
+        BlockStatement, Boolean, CallExpression, Expression, ExpressionStatement, FunctionLiteral,
+        Identifier, IfExpression, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression,
+        Program, ReturnStatement, Statement,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -133,7 +133,7 @@ impl Parser {
         };
         let mut left_expr = prefix;
         while !self.peek_token_is(TokenType::Semicolon) && *precedence < self.peek_precedence() {
-            let infix = match &self.peek_token.r#type {
+            let infix: Box<dyn Expression> = match &self.peek_token.r#type {
                 TokenType::Plus
                 | TokenType::Minus
                 | TokenType::Slash
@@ -142,6 +142,7 @@ impl Parser {
                 | TokenType::NotEq
                 | TokenType::LessThan
                 | TokenType::GreaterThan => self.parse_infix_expression(left_expr)?,
+                TokenType::LParen => self.parse_call_expression(left_expr)?,
                 e => return Err(anyhow!("No infix function implemented for {:?}", e)),
             };
             left_expr = infix;
@@ -309,6 +310,42 @@ impl Parser {
             );
         }
         Ok(identifiers)
+    }
+
+    fn parse_call_expression(
+        &mut self,
+        function: Box<dyn Expression>,
+    ) -> anyhow::Result<Box<CallExpression>> {
+        let token = self.cur_token.clone();
+        let arguments = self.parse_call_arguments()?;
+        Ok(Box::new(CallExpression {
+            token,
+            function,
+            arguments,
+        }))
+    }
+
+    fn parse_call_arguments(&mut self) -> anyhow::Result<Vec<Box<dyn Expression>>> {
+        self.next_token()?;
+        let mut arguments: Vec<Box<dyn Expression>> = Vec::new();
+        if self.peek_token_is(TokenType::RParen) {
+            self.next_token()?;
+            return Ok(arguments);
+        }
+        self.next_token()?;
+        arguments.push(self.parse_expression(&LOWEST)?);
+        while self.peek_token_is(TokenType::Comma) {
+            self.next_token()?;
+            self.next_token()?;
+            arguments.push(self.parse_expression(&LOWEST)?);
+        }
+        if !self.expect_peek(TokenType::RParen)? {
+            return Err(anyhow!(
+                "Next TokenType should be 'RParen'\nGot: {:?}",
+                self.peek_token
+            ));
+        }
+        Ok(arguments)
     }
 
     fn cur_token_is(&self, token_type: TokenType) -> bool {

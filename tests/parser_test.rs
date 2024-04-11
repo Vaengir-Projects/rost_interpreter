@@ -1,8 +1,8 @@
 use rost_interpreter::{
     ast::{
-        Boolean, Expression, ExpressionStatement, FunctionLiteral, Identifier, IfExpression,
-        InfixExpression, IntegerLiteral, LetStatement, Node, PrefixExpression, ReturnStatement,
-        Statement,
+        Boolean, CallExpression, Expression, ExpressionStatement, FunctionLiteral, Identifier,
+        IfExpression, InfixExpression, IntegerLiteral, LetStatement, Node, PrefixExpression,
+        ReturnStatement, Statement,
     },
     lexer::Lexer,
     parser::Parser,
@@ -364,18 +364,18 @@ fn test_operator_precedence_parsing() {
             input: b"!(true == true)".to_vec(),
             expected: String::from("(!(true == true))"),
         },
-        // Test {
-        //     input: b"a + add(b * c) + d".to_vec(),
-        //     expected: String::from("((a + add((b * c))) + d)"),
-        // },
-        // Test {
-        //     input: b"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))".to_vec(),
-        //     expected: String::from("add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"),
-        // },
-        // Test {
-        //     input: b"add(a + b + c * d / f + g)".to_vec(),
-        //     expected: String::from("add((((a + b) + ((c * d) / f)) + g))"),
-        // },
+        Test {
+            input: b"a + add(b * c) + d".to_vec(),
+            expected: String::from("((a + add((b * c))) + d)"),
+        },
+        Test {
+            input: b"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))".to_vec(),
+            expected: String::from("add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"),
+        },
+        Test {
+            input: b"add(a + b + c * d / f + g)".to_vec(),
+            expected: String::from("add((((a + b) + ((c * d) / f)) + g))"),
+        },
         // Test {
         //     input: b"a * [1, 2, 3, 4][b * c] * d".to_vec(),
         //     expected: String::from("((a * ([1, 2, 3, 4][(b * c)])) * d)"),
@@ -721,5 +721,110 @@ fn test_function_parameter_parsing() {
                 program.statements[0]
             );
         }
+    }
+}
+
+#[test]
+fn test_call_expression_parsing() {
+    let input = b"add(1, 2 * 3, 4 + 5);";
+    let lexer = Lexer::new(input);
+    let mut parser = Parser::new(lexer).unwrap();
+    let program = parser.parse_program().unwrap();
+    assert_eq!(program.statements.len(), 1);
+    if let Some(expression_statement) = program.statements[0]
+        .as_any()
+        .downcast_ref::<ExpressionStatement>()
+    {
+        if let Some(call_expression) = expression_statement
+            .expression
+            .as_any()
+            .downcast_ref::<CallExpression>()
+        {
+            let func = match call_expression
+                .function
+                .as_any()
+                .downcast_ref::<Identifier>()
+            {
+                Some(f) => f,
+                None => panic!("Expected: Identifier\nGot: {:?}", call_expression.function),
+            };
+            assert_eq!(func.value, String::from("add"));
+            assert_eq!(call_expression.arguments.len(), 3);
+            let first_arg = match call_expression.arguments[0]
+                .as_any()
+                .downcast_ref::<IntegerLiteral>()
+            {
+                Some(i) => i,
+                None => panic!(
+                "Not the right kind of Expression. Expected: Expression::IntegerLiteral\nGot: {}",
+                    call_expression.arguments[0]
+            ),
+            };
+            assert_eq!(first_arg.value, 1);
+            let second_arg = match call_expression.arguments[1]
+                .as_any()
+                .downcast_ref::<InfixExpression>()
+            {
+                Some(i) => i,
+                None => panic!(
+                "Not the right kind of Expression. Expected: Expression::InfixExpression\nGot: {}",
+                    call_expression.arguments[1]
+            ),
+            };
+            let second_left = match second_arg.left.as_any().downcast_ref::<IntegerLiteral>() {
+                Some(i) => i,
+                None => panic!(
+                    "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
+                    second_arg.left
+                ),
+            };
+            let second_right = match second_arg.right.as_any().downcast_ref::<IntegerLiteral>() {
+                Some(i) => i,
+                None => panic!(
+                    "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
+                    second_arg.right
+                ),
+            };
+            assert_eq!(second_left.value, 2);
+            assert_eq!(second_arg.operator, b"*");
+            assert_eq!(second_right.value, 3);
+            let third_arg = match call_expression.arguments[2]
+                .as_any()
+                .downcast_ref::<InfixExpression>()
+            {
+                Some(i) => i,
+                None => panic!(
+                "Not the right kind of Expression. Expected: Expression::InfixExpression\nGot: {}",
+                    call_expression.arguments[2]
+            ),
+            };
+            let third_left = match third_arg.left.as_any().downcast_ref::<IntegerLiteral>() {
+                Some(i) => i,
+                None => panic!(
+                    "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
+                    third_arg.left
+                ),
+            };
+            let third_right = match third_arg.right.as_any().downcast_ref::<IntegerLiteral>() {
+                Some(i) => i,
+                None => panic!(
+                    "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
+                    third_arg.left
+                ),
+            };
+            assert_eq!(third_left.value, 4);
+            assert_eq!(third_arg.operator, b"+");
+            assert_eq!(third_right.value, 5);
+        } else {
+            panic!(
+                "Expected: CallExpression\nGot: {:?}",
+                expression_statement.expression
+            );
+        }
+    } else {
+        panic!(
+            "Expected: ExpressionStatement\nGot: {:?}",
+            program.statements[0]
+        );
     }
 }

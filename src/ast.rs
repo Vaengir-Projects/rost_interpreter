@@ -345,3 +345,34 @@ impl Display for FunctionLiteral {
 }
 
 impl Expression for FunctionLiteral {}
+
+#[derive(Debug)]
+pub struct CallExpression {
+    pub token: Token,
+    pub function: Box<dyn Expression>,
+    pub arguments: Vec<Box<dyn Expression>>,
+}
+
+impl Node for CallExpression {
+    fn token_literal(&self) -> String {
+        self.token.literal.clone()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl Display for CallExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let arguments = self
+            .arguments
+            .iter()
+            .map(|p| p.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+        write!(f, "{}({})", self.token_literal(), arguments,)
+    }
+}
+
+impl Expression for CallExpression {}
