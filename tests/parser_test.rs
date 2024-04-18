@@ -2,21 +2,11 @@ use rost_interpreter::{
     ast::{
         Boolean, CallExpression, Expression, ExpressionStatement, FunctionLiteral, Identifier,
         IfExpression, InfixExpression, IntegerLiteral, LetStatement, Node, PrefixExpression,
-        ReturnStatement, Statement,
+        ReturnStatement,
     },
     lexer::Lexer,
     parser::Parser,
 };
-
-fn test_let_statement(statement: &dyn Statement, name: &str) {
-    if let Some(statement) = statement.as_any().downcast_ref::<LetStatement>() {
-        assert_eq!(statement.token_literal(), String::from("let"));
-        assert_eq!(statement.name.value, name);
-        assert_eq!(statement.name.token_literal(), name);
-    } else {
-        panic!("Expected: LetStatement\nGot: {:?}", statement);
-    }
-}
 
 fn test_integer_literal(integer_expression: &dyn Expression, value: i64) {
     if let Some(integer_literal) = integer_expression.as_any().downcast_ref::<IntegerLiteral>() {
@@ -29,38 +19,173 @@ fn test_integer_literal(integer_expression: &dyn Expression, value: i64) {
 
 #[test]
 fn test_let_statements() {
-    let input = b"
-let x = 5;
-let y = 10;
-let foobar = 838383;";
-
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer).unwrap();
-    let program = parser.parse_program().unwrap();
-
-    assert_eq!(program.statements.len(), 3);
-    test_let_statement(&*program.statements[0], "x");
-    test_let_statement(&*program.statements[1], "y");
-    test_let_statement(&*program.statements[2], "foobar");
+    #[derive(Debug)]
+    enum Used {
+        Int(i64),
+        Bool(bool),
+        String(String),
+    }
+    #[derive(Debug)]
+    struct Test {
+        input: Vec<u8>,
+        expected_identifier: String,
+        expected_value: Used,
+    }
+    let tests: Vec<Test> = vec![
+        Test {
+            input: b"let x = 5;".to_vec(),
+            expected_identifier: String::from("x"),
+            expected_value: Used::Int(5),
+        },
+        Test {
+            input: b"let y = true;".to_vec(),
+            expected_identifier: String::from("y"),
+            expected_value: Used::Bool(true),
+        },
+        Test {
+            input: b"let foobar = y;".to_vec(),
+            expected_identifier: String::from("foobar"),
+            expected_value: Used::String(String::from("y")),
+        },
+    ];
+    for test in tests {
+        let lexer = Lexer::new(&test.input);
+        let mut parser = Parser::new(lexer).unwrap();
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.statements.len(), 1);
+        let statement = match program.statements[0]
+            .as_any()
+            .downcast_ref::<LetStatement>()
+        {
+            Some(l) => l,
+            None => panic!(
+                "Not the right kind of Statement. Expected: LetStatement\nGot: {}",
+                &program.statements[0]
+            ),
+        };
+        assert_eq!(statement.name.value, test.expected_identifier);
+        assert_eq!(statement.name.token_literal(), test.expected_identifier);
+        dbg!(&statement.value);
+        match test.expected_value {
+            Used::Int(i) => {
+                let return_value = match statement.value.as_any().downcast_ref::<IntegerLiteral>() {
+                    Some(i) => i,
+                    None => panic!(
+                        "Not the right kind of Expression. Expected: IntegerLiteral\nGot: {}",
+                        statement.value
+                    ),
+                };
+                assert_eq!(return_value.value, i)
+            }
+            Used::Bool(b) => {
+                let return_value = match statement.value.as_any().downcast_ref::<Boolean>() {
+                        Some(b) => b,
+                        None => panic!(
+                            "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
+                            statement.value
+                        ),
+                    };
+                assert_eq!(return_value.value, b)
+            }
+            Used::String(s) => {
+                let return_value = match statement.value.as_any().downcast_ref::<Identifier>() {
+                        Some(i) => i,
+                        None => panic!(
+                            "Not the right kind of Expression. Expected: Expression::Identifier\nGot: {}",
+                            statement.value
+                        ),
+                    };
+                assert_eq!(return_value.value, s)
+            }
+        }
+    }
 }
 
 #[test]
 fn test_return_statements() {
-    let input = b"
-return 5;
-return 10;
-return 993322;";
-
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer).unwrap();
-    let program = parser.parse_program().unwrap();
-
-    assert_eq!(program.statements.len(), 3);
-    for statement in program.statements {
-        if let Some(return_statement) = statement.as_any().downcast_ref::<ReturnStatement>() {
-            assert_eq!(return_statement.token_literal(), "return");
-        } else {
-            panic!("Expected: ReturnStatement\nGot: {:?}", statement);
+    #[derive(Debug)]
+    enum Used {
+        Int(i64),
+        Bool(bool),
+        String(String),
+    }
+    #[derive(Debug)]
+    struct Test {
+        input: Vec<u8>,
+        expected_value: Used,
+    }
+    let tests: Vec<Test> = vec![
+        Test {
+            input: b"return 5;".to_vec(),
+            expected_value: Used::Int(5),
+        },
+        Test {
+            input: b"return true;".to_vec(),
+            expected_value: Used::Bool(true),
+        },
+        Test {
+            input: b"return foobar;".to_vec(),
+            expected_value: Used::String(String::from("foobar")),
+        },
+    ];
+    for test in tests {
+        let lexer = Lexer::new(&test.input);
+        let mut parser = Parser::new(lexer).unwrap();
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.statements.len(), 1);
+        let return_statement = match program.statements[0]
+            .as_any()
+            .downcast_ref::<ReturnStatement>()
+        {
+            Some(r) => r,
+            None => panic!(
+                "Not the right kind of Statement. Expected: ReturnStatement\nGot: {}",
+                program.statements[0]
+            ),
+        };
+        match test.expected_value {
+            Used::Int(i) => {
+                let return_value = match return_statement
+                    .return_value
+                    .as_any()
+                    .downcast_ref::<IntegerLiteral>()
+                {
+                    Some(i) => i,
+                    None => panic!(
+                        "Not the right kind of Expression. Expected: IntegerLiteral\nGot: {}",
+                        return_statement.return_value
+                    ),
+                };
+                assert_eq!(return_value.value, i)
+            }
+            Used::Bool(b) => {
+                let return_value = match return_statement
+                    .return_value
+                    .as_any()
+                    .downcast_ref::<Boolean>()
+                {
+                    Some(b) => b,
+                    None => panic!(
+                        "Not the right kind of Expression. Expected: Boolean\nGot: {}",
+                        return_statement.return_value
+                    ),
+                };
+                assert_eq!(return_value.value, b)
+            }
+            Used::String(s) => {
+                let return_value = match return_statement
+                    .return_value
+                    .as_any()
+                    .downcast_ref::<Identifier>()
+                {
+                    Some(i) => i,
+                    None => panic!(
+                        "Not the right kind of Expression. Expected: Identifier\nGot: {}",
+                        return_statement.return_value
+                    ),
+                };
+                assert_eq!(return_value.value, s)
+            }
         }
     }
 }

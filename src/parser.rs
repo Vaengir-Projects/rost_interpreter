@@ -75,39 +75,24 @@ impl Parser {
         if !self.expect_peek(TokenType::Assign)? {
             return Err(anyhow!("Expected next TokenType::Assign"));
         }
-        // TODO: We're skipping expressions until we encounter a semicolon
-        while !self.cur_token_is(TokenType::Semicolon) {
+        self.next_token()?;
+        let value = self.parse_expression(&LOWEST)?;
+        if self.peek_token_is(TokenType::Semicolon) {
             self.next_token()?;
         }
-        Ok(Box::new(LetStatement {
-            token,
-            name,
-            value: Box::new(Identifier {
-                token: Token {
-                    r#type: TokenType::Ident,
-                    literal: String::from("anotherVar"),
-                },
-                value: String::from("anotherVar"),
-            }),
-        }))
+        Ok(Box::new(LetStatement { token, name, value }))
     }
 
     fn parse_return_statement(&mut self) -> anyhow::Result<Box<ReturnStatement>> {
         let token = self.cur_token.clone();
         self.next_token()?;
-        // TODO: We're skipping expressions until we encounter a semicolon
-        while !self.cur_token_is(TokenType::Semicolon) {
+        let return_value = self.parse_expression(&LOWEST)?;
+        if self.peek_token_is(TokenType::Semicolon) {
             self.next_token()?;
         }
         Ok(Box::new(ReturnStatement {
             token,
-            return_value: Box::new(Identifier {
-                token: Token {
-                    r#type: TokenType::Ident,
-                    literal: String::from("anotherVar"),
-                },
-                value: String::from("anotherVar"),
-            }),
+            return_value,
         }))
     }
 
