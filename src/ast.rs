@@ -91,7 +91,12 @@ pub enum Expression {
         operator: u8,
         right: Box<Expression>,
     },
-    InfixExpression {},
+    InfixExpression {
+        token: Token,
+        left: Box<Expression>,
+        operator: Vec<u8>,
+        right: Box<Expression>,
+    },
     Boolean {},
     IfExpression {},
     BlockStatement {},
@@ -109,7 +114,7 @@ impl NodeTrait for Expression {
             Expression::Identifier { token, .. } => token.literal.clone(),
             Expression::IntegerLiteral { token, .. } => token.literal.clone(),
             Expression::PrefixExpression { token, .. } => token.literal.clone(),
-            Expression::InfixExpression {} => todo!(),
+            Expression::InfixExpression { token, .. } => token.literal.clone(),
             Expression::Boolean {} => todo!(),
             Expression::IfExpression {} => todo!(),
             Expression::BlockStatement {} => todo!(),
@@ -131,7 +136,19 @@ impl Display for Expression {
             Expression::PrefixExpression {
                 operator, right, ..
             } => write!(f, "({}{})", operator, right),
-            Expression::InfixExpression {} => todo!(),
+            Expression::InfixExpression {
+                left,
+                operator,
+                right,
+                ..
+            } => write!(
+                f,
+                "({} {} {})",
+                left,
+                String::from_utf8(operator.clone())
+                    .expect("Couldn't convert operator bytes to String"),
+                right
+            ),
             Expression::Boolean {} => todo!(),
             Expression::IfExpression {} => todo!(),
             Expression::BlockStatement {} => todo!(),

@@ -145,3 +145,89 @@ fn parsing_prefix_expression() {
         }
     }
 }
+
+#[test]
+fn test_parsing_infix_expression() {
+    #[derive(Debug)]
+    struct Test {
+        input: Vec<u8>,
+        left_value: i64,
+        operator: Vec<u8>,
+        right_value: i64,
+    }
+    let tests = vec![
+        Test {
+            input: b"5 + 5;".to_vec(),
+            left_value: 5,
+            operator: b"+".to_vec(),
+            right_value: 5,
+        },
+        Test {
+            input: b"5 - 5;".to_vec(),
+            left_value: 5,
+            operator: b"-".to_vec(),
+            right_value: 5,
+        },
+        Test {
+            input: b"5 * 5;".to_vec(),
+            left_value: 5,
+            operator: b"*".to_vec(),
+            right_value: 5,
+        },
+        Test {
+            input: b"5 / 5;".to_vec(),
+            left_value: 5,
+            operator: b"/".to_vec(),
+            right_value: 5,
+        },
+        Test {
+            input: b"5 > 5;".to_vec(),
+            left_value: 5,
+            operator: b">".to_vec(),
+            right_value: 5,
+        },
+        Test {
+            input: b"5 < 5;".to_vec(),
+            left_value: 5,
+            operator: b"<".to_vec(),
+            right_value: 5,
+        },
+        Test {
+            input: b"5 == 5;".to_vec(),
+            left_value: 5,
+            operator: b"==".to_vec(),
+            right_value: 5,
+        },
+        Test {
+            input: b"5 != 5;".to_vec(),
+            left_value: 5,
+            operator: b"!=".to_vec(),
+            right_value: 5,
+        },
+    ];
+
+    for test in tests {
+        let lexer = Lexer::new(&test.input);
+        let mut parser = Parser::new(lexer).unwrap();
+        let program = parser.parse_program().unwrap();
+
+        assert_eq!(program.statements.len(), 1);
+        let expression_statement = match &program.statements[0] {
+            Statement::Expression { expression, .. } => expression,
+            e => panic!("Expected: Statement::Expression\nGot: {:?}", e),
+        };
+        match expression_statement {
+            Expression::InfixExpression {
+                left,
+                operator,
+                right,
+                ..
+            } => {
+                test_integer_literal(left, test.left_value);
+                assert_eq!(operator, &test.operator);
+                test_integer_literal(right, test.right_value);
+            }
+            e => panic!("Expected: Expression::InfixExpression\nGot: {:?}", e),
+        };
+    }
+}

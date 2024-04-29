@@ -4,12 +4,12 @@ use crate::{lexer::Lexer, token::Token};
 use anyhow::anyhow;
 
 const LOWEST: u8 = 1;
-const _EQUALS: u8 = 2;
-const _LESSGREATER: u8 = 3;
-const _SUM: u8 = 4;
-const _PRODUCT: u8 = 5;
+const EQUALS: u8 = 2;
+const LESSGREATER: u8 = 3;
+const SUM: u8 = 4;
+const PRODUCT: u8 = 5;
 const PREFIX: u8 = 6;
-const _CALL: u8 = 7;
+const CALL: u8 = 7;
 const _INDEX: u8 = 8;
 
 #[derive(Debug)]
@@ -57,14 +57,28 @@ impl Parser {
         }
     }
 
-    fn parse_expression(&mut self, _precedence: &u8) -> anyhow::Result<Expression> {
+    fn parse_expression(&mut self, precedence: &u8) -> anyhow::Result<Expression> {
         let prefix = match &self.cur_token.r#type {
             TokenType::Ident => self.parse_identifier()?,
             TokenType::Int => self.parse_integer_literal()?,
             TokenType::Bang | TokenType::Minus => self.parse_prefix_expression()?,
             e => return Err(anyhow!("No prefix function implemented for {:?}", e)),
         };
-        let left_expr = prefix;
+        let mut left_expr = prefix;
+        while !self.peek_token_is(TokenType::Semicolon) && *precedence < self.peek_precedence() {
+            let infix = match &self.peek_token.r#type {
+                TokenType::Plus
+                | TokenType::Minus
+                | TokenType::Slash
+                | TokenType::Asterisk
+                | TokenType::Eq
+                | TokenType::NotEq
+                | TokenType::LessThan
+                | TokenType::GreaterThan => self.parse_infix_expression(Box::new(left_expr))?,
+                e => return Err(anyhow!("No infix function implemented for {:?}", e)),
+            };
+            left_expr = infix;
+        }
         Ok(left_expr)
     }
 
@@ -147,6 +161,21 @@ impl Parser {
         })
     }
 
+    fn parse_infix_expression(&mut self, left: Box<Expression>) -> anyhow::Result<Expression> {
+        self.next_token()?;
+        let token = self.cur_token.clone();
+        let operator = self.cur_token.literal.clone().as_bytes().to_vec();
+        let precedence = self.cur_precedence();
+        self.next_token()?;
+        let right = Box::new(self.parse_expression(&precedence)?);
+        Ok(Expression::InfixExpression {
+            token,
+            left,
+            operator,
+            right,
+        })
+    }
+
     fn cur_token_is(&self, token_type: TokenType) -> bool {
         self.cur_token.r#type == token_type
     }
@@ -161,5 +190,29 @@ impl Parser {
             return Ok(true);
         }
         Ok(false)
+    }
+
+    fn precedences(token_type: &TokenType) -> u8 {
+        match token_type {
+            TokenType::Eq => EQUALS,
+            TokenType::NotEq => EQUALS,
+            TokenType::LessThan => LESSGREATER,
+            TokenType::GreaterThan => LESSGREATER,
+            TokenType::Plus => SUM,
+            TokenType::Minus => SUM,
+            TokenType::Slash => PRODUCT,
+            TokenType::Asterisk => PRODUCT,
+            TokenType::LParen => CALL,
+            // TokenType::LBracket => INDEX,
+            _ => LOWEST,
+        }
+    }
+
+    fn cur_precedence(&self) -> u8 {
+        Self::precedences(&self.cur_token.r#type)
+    }
+
+    fn peek_precedence(&self) -> u8 {
+        Self::precedences(&self.peek_token.r#type)
     }
 }
