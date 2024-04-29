@@ -1,4 +1,4 @@
-use crate::token::{self, Token};
+use crate::token::Token;
 use std::fmt::Display;
 
 pub trait NodeTrait: Display {
@@ -44,7 +44,10 @@ pub enum Statement {
         token: Token,
         return_value: Expression,
     },
-    Expression {},
+    Expression {
+        token: Token,
+        expression: Expression,
+    },
 }
 
 impl NodeTrait for Statement {
@@ -52,7 +55,7 @@ impl NodeTrait for Statement {
         match self {
             Statement::Let { token, .. } => token.literal.clone(),
             Statement::Return { token, .. } => token.literal.clone(),
-            Statement::Expression {} => todo!(),
+            Statement::Expression { token, .. } => token.literal.clone(),
         }
     }
 }
@@ -66,16 +69,28 @@ impl Display for Statement {
             Statement::Return { return_value, .. } => {
                 write!(f, "{} {};", self.token_literal(), return_value)
             }
-            Statement::Expression {} => todo!(),
+            Statement::Expression { expression, .. } => {
+                write!(f, "{}", expression)
+            }
         }
     }
 }
 
 #[derive(Debug)]
 pub enum Expression {
-    Identifier { token: Token, value: String },
-    IntegerLiteral {},
-    PrefixExpression {},
+    Identifier {
+        token: Token,
+        value: String,
+    },
+    IntegerLiteral {
+        token: Token,
+        value: i64,
+    },
+    PrefixExpression {
+        token: Token,
+        operator: u8,
+        right: Box<Expression>,
+    },
     InfixExpression {},
     Boolean {},
     IfExpression {},
@@ -92,8 +107,8 @@ impl NodeTrait for Expression {
     fn token_literal(&self) -> String {
         match self {
             Expression::Identifier { token, .. } => token.literal.clone(),
-            Expression::IntegerLiteral {} => todo!(),
-            Expression::PrefixExpression {} => todo!(),
+            Expression::IntegerLiteral { token, .. } => token.literal.clone(),
+            Expression::PrefixExpression { token, .. } => token.literal.clone(),
             Expression::InfixExpression {} => todo!(),
             Expression::Boolean {} => todo!(),
             Expression::IfExpression {} => todo!(),
@@ -111,9 +126,11 @@ impl NodeTrait for Expression {
 impl Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Expression::Identifier { token, value } => write!(f, "{}", value),
-            Expression::IntegerLiteral {} => todo!(),
-            Expression::PrefixExpression {} => todo!(),
+            Expression::Identifier { value, .. } => write!(f, "{}", value),
+            Expression::IntegerLiteral { value, .. } => write!(f, "{}", value),
+            Expression::PrefixExpression {
+                operator, right, ..
+            } => write!(f, "({}{})", operator, right),
             Expression::InfixExpression {} => todo!(),
             Expression::Boolean {} => todo!(),
             Expression::IfExpression {} => todo!(),

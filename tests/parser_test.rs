@@ -4,6 +4,15 @@ use rost_interpreter::{
     parser::Parser,
 };
 
+fn test_integer_literal(integer_expression: &Expression, expected_value: i64) {
+    match integer_expression {
+        Expression::IntegerLiteral { value, .. } => {
+            assert_eq!(value, &expected_value);
+        }
+        e => panic!("Expected: IntegerLiteral\nGot: {:?}", e),
+    }
+}
+
 fn test_let_statement(statement: &Statement, expected_name: &str) {
     assert_eq!(statement.token_literal(), String::from("let"));
     match statement {
@@ -53,6 +62,86 @@ return 993322;";
                 assert_eq!(statement.token_literal(), String::from("return"));
             }
             e => panic!("Not a Statement::Return\nGot: {:?}", e),
+        }
+    }
+}
+
+#[test]
+fn identifier_expression() {
+    let input = b"foobar;";
+
+    let lexer = Lexer::new(input);
+    let mut parser = Parser::new(lexer).unwrap();
+    let program = parser.parse_program().unwrap();
+    assert_eq!(program.statements.len(), 1);
+    match &program.statements[0] {
+        Statement::Expression { expression, .. } => match expression {
+            Expression::Identifier { value, .. } => {
+                assert_eq!(value, "foobar");
+            }
+            e => panic!("Expected Expression::Identifier\nGot: {}", e),
+        },
+        e => panic!("Not a Statement::Expression\nGot: {}", e),
+    }
+}
+
+#[test]
+fn integer_literal() {
+    let input = b"5;";
+
+    let lexer = Lexer::new(input);
+    let mut parser = Parser::new(lexer).unwrap();
+    let program = parser.parse_program().unwrap();
+    assert_eq!(program.statements.len(), 1);
+    match &program.statements[0] {
+        Statement::Expression { expression, .. } => match expression {
+            Expression::IntegerLiteral { value, .. } => {
+                assert_eq!(value, &5);
+            }
+            e => panic!("Expected Expression::IntegerLiteral\nGot: {}", e),
+        },
+        e => panic!("Not a Statement::Expression\nGot: {}", e),
+    }
+}
+
+#[test]
+fn parsing_prefix_expression() {
+    #[derive(Debug)]
+    struct Test {
+        input: Vec<u8>,
+        operator: u8,
+        integer_value: i64,
+    }
+    let tests = vec![
+        Test {
+            input: b"!5;".to_vec(),
+            operator: b'!',
+            integer_value: 5,
+        },
+        Test {
+            input: b"-15".to_vec(),
+            operator: b'-',
+            integer_value: 15,
+        },
+    ];
+
+    for test in tests {
+        let lexer = Lexer::new(&test.input);
+        let mut parser = Parser::new(lexer).unwrap();
+        let program = parser.parse_program().unwrap();
+
+        assert_eq!(program.statements.len(), 1);
+        match &program.statements[0] {
+            Statement::Expression { expression, .. } => match expression {
+                Expression::PrefixExpression {
+                    operator, right, ..
+                } => {
+                    assert_eq!(operator, &test.operator);
+                    test_integer_literal(right, test.integer_value);
+                }
+                e => panic!("Expected: PrefixExpression\nGot: {:?}", e),
+            },
+            e => panic!("Expected: ExpressionStatement\nGot: {:?}", e),
         }
     }
 }

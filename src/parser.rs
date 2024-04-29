@@ -3,6 +3,15 @@ use crate::token::TokenType;
 use crate::{lexer::Lexer, token::Token};
 use anyhow::anyhow;
 
+const LOWEST: u8 = 1;
+const _EQUALS: u8 = 2;
+const _LESSGREATER: u8 = 3;
+const _SUM: u8 = 4;
+const _PRODUCT: u8 = 5;
+const PREFIX: u8 = 6;
+const _CALL: u8 = 7;
+const _INDEX: u8 = 8;
+
 #[derive(Debug)]
 pub struct Parser {
     lexer: Lexer,
@@ -44,8 +53,19 @@ impl Parser {
         match &self.cur_token.r#type {
             TokenType::Let => Ok(self.parse_let_statement()?),
             TokenType::Return => Ok(self.parse_return_statement()?),
-            _ => Err(anyhow!("ExpressionStatement not implemented yet")),
+            _ => Ok(self.parse_expression_statement()?),
         }
+    }
+
+    fn parse_expression(&mut self, _precedence: &u8) -> anyhow::Result<Expression> {
+        let prefix = match &self.cur_token.r#type {
+            TokenType::Ident => self.parse_identifier()?,
+            TokenType::Int => self.parse_integer_literal()?,
+            TokenType::Bang | TokenType::Minus => self.parse_prefix_expression()?,
+            e => return Err(anyhow!("No prefix function implemented for {:?}", e)),
+        };
+        let left_expr = prefix;
+        Ok(left_expr)
     }
 
     fn parse_let_statement(&mut self) -> anyhow::Result<Statement> {
@@ -90,6 +110,40 @@ impl Parser {
         Ok(Statement::Return {
             token,
             return_value: Expression::Default,
+        })
+    }
+
+    fn parse_expression_statement(&mut self) -> anyhow::Result<Statement> {
+        let token = self.cur_token.clone();
+        let expression = self.parse_expression(&LOWEST)?;
+        if self.peek_token_is(TokenType::Semicolon) {
+            self.next_token()?;
+        }
+        Ok(Statement::Expression { token, expression })
+    }
+
+    fn parse_identifier(&mut self) -> anyhow::Result<Expression> {
+        Ok(Expression::Identifier {
+            token: self.cur_token.clone(),
+            value: self.cur_token.literal.clone(),
+        })
+    }
+
+    fn parse_integer_literal(&mut self) -> anyhow::Result<Expression> {
+        let token = self.cur_token.clone();
+        let value: i64 = self.cur_token.literal.parse()?;
+        Ok(Expression::IntegerLiteral { token, value })
+    }
+
+    fn parse_prefix_expression(&mut self) -> anyhow::Result<Expression> {
+        let token = self.cur_token.clone();
+        let operator = self.cur_token.literal.as_bytes()[0];
+        self.next_token()?;
+        let right = Box::new(self.parse_expression(&PREFIX)?);
+        Ok(Expression::PrefixExpression {
+            token,
+            operator,
+            right,
         })
     }
 
