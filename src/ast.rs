@@ -97,9 +97,20 @@ pub enum Expression {
         operator: Vec<u8>,
         right: Box<Expression>,
     },
-    Boolean {},
-    IfExpression {},
-    BlockStatement {},
+    Boolean {
+        token: Token,
+        value: bool,
+    },
+    IfExpression {
+        token: Token,
+        condition: Box<Expression>,
+        consequence: Box<Expression>,
+        alternative: Option<Box<Expression>>,
+    },
+    BlockStatement {
+        token: Token,
+        statements: Vec<Statement>,
+    },
     FunctionLiteral {},
     CallExpression {},
     StringLiteral {},
@@ -115,9 +126,9 @@ impl NodeTrait for Expression {
             Expression::IntegerLiteral { token, .. } => token.literal.clone(),
             Expression::PrefixExpression { token, .. } => token.literal.clone(),
             Expression::InfixExpression { token, .. } => token.literal.clone(),
-            Expression::Boolean {} => todo!(),
-            Expression::IfExpression {} => todo!(),
-            Expression::BlockStatement {} => todo!(),
+            Expression::Boolean { token, .. } => token.literal.clone(),
+            Expression::IfExpression { token, .. } => token.literal.clone(),
+            Expression::BlockStatement { token, .. } => token.literal.clone(),
             Expression::FunctionLiteral {} => todo!(),
             Expression::CallExpression {} => todo!(),
             Expression::StringLiteral {} => todo!(),
@@ -135,7 +146,7 @@ impl Display for Expression {
             Expression::IntegerLiteral { value, .. } => write!(f, "{}", value),
             Expression::PrefixExpression {
                 operator, right, ..
-            } => write!(f, "({}{})", operator, right),
+            } => write!(f, "({}{})", *operator as char, right),
             Expression::InfixExpression {
                 left,
                 operator,
@@ -149,9 +160,24 @@ impl Display for Expression {
                     .expect("Couldn't convert operator bytes to String"),
                 right
             ),
-            Expression::Boolean {} => todo!(),
-            Expression::IfExpression {} => todo!(),
-            Expression::BlockStatement {} => todo!(),
+            Expression::Boolean { value, .. } => write!(f, "{}", value),
+            Expression::IfExpression {
+                condition,
+                consequence,
+                alternative,
+                ..
+            } => match &alternative {
+                Some(alternative) => {
+                    write!(f, "if {} {} else {}", condition, consequence, alternative)
+                }
+                None => write!(f, "if {} {}", condition, consequence),
+            },
+            Expression::BlockStatement { statements, .. } => {
+                for statement in statements {
+                    write!(f, "{}", statement)?;
+                }
+                Ok(())
+            }
             Expression::FunctionLiteral {} => todo!(),
             Expression::CallExpression {} => todo!(),
             Expression::StringLiteral {} => todo!(),

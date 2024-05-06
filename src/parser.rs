@@ -62,6 +62,9 @@ impl Parser {
             TokenType::Ident => self.parse_identifier()?,
             TokenType::Int => self.parse_integer_literal()?,
             TokenType::Bang | TokenType::Minus => self.parse_prefix_expression()?,
+            TokenType::True | TokenType::False => self.parse_boolean()?,
+            TokenType::LParen => self.parse_grouped_expression()?,
+            TokenType::If => self.parse_if_expression()?,
             e => return Err(anyhow!("No prefix function implemented for {:?}", e)),
         };
         let mut left_expr = prefix;
@@ -174,6 +177,74 @@ impl Parser {
             operator,
             right,
         })
+    }
+
+    fn parse_boolean(&mut self) -> anyhow::Result<Expression> {
+        Ok(Expression::Boolean {
+            token: self.cur_token.clone(),
+            value: self.cur_token_is(TokenType::True),
+        })
+    }
+
+    fn parse_grouped_expression(&mut self) -> anyhow::Result<Expression> {
+        self.next_token()?;
+        let exp = self.parse_expression(&LOWEST)?;
+        if !self.expect_peek(TokenType::RParen)? {
+            return Err(anyhow!(
+                "Expected: TokenType::RParen\nGot: {:?}",
+                self.peek_token
+            ));
+        }
+        Ok(exp)
+    }
+
+    fn parse_if_expression(&mut self) -> anyhow::Result<Expression> {
+        let token = self.cur_token.clone();
+        if !self.expect_peek(TokenType::LParen)? {
+            return Err(anyhow!(
+                "Expected: TokenType::LParen\nGot: {:?}",
+                self.peek_token
+            ));
+        }
+        self.next_token()?;
+        let condition = Box::new(self.parse_expression(&LOWEST)?);
+        if !self.expect_peek(TokenType::RParen)? || !self.expect_peek(TokenType::LBrace)? {
+            return Err(anyhow!(
+                "Expected: TokenType::RParen, then TokenType::LBrace\nGot: {:?}",
+                self.peek_token
+            ));
+        }
+        let consequence = Box::new(self.parse_block_statement()?);
+        let mut alternative: Option<Box<Expression>> = None;
+        if self.peek_token_is(TokenType::Else) {
+            self.next_token()?;
+            if !self.expect_peek(TokenType::LBrace)? {
+                return Err(anyhow!(
+                    "Expected: TokenType:RBrace\nGot: {:?}",
+                    self.peek_token
+                ));
+            }
+            alternative = Some(Box::new(self.parse_block_statement()?));
+        }
+        let if_expression = Expression::IfExpression {
+            token,
+            condition,
+            consequence,
+            alternative,
+        };
+        Ok(if_expression)
+    }
+
+    fn parse_block_statement(&mut self) -> anyhow::Result<Expression> {
+        let token = self.cur_token.clone();
+        self.next_token()?;
+        let mut statements = Vec::new();
+        while !self.cur_token_is(TokenType::RBrace) && !self.cur_token_is(TokenType::EOF) {
+            let statement = self.parse_statement()?;
+            statements.push(statement);
+            self.next_token()?;
+        }
+        Ok(Expression::BlockStatement { token, statements })
     }
 
     fn cur_token_is(&self, token_type: TokenType) -> bool {

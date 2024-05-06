@@ -3,6 +3,7 @@ use rost_interpreter::{
     lexer::Lexer,
     parser::Parser,
 };
+use std::ops::Deref;
 
 fn test_integer_literal(integer_expression: &Expression, expected_value: i64) {
     match integer_expression {
@@ -229,5 +230,225 @@ fn test_parsing_infix_expression() {
             }
             e => panic!("Expected: Expression::InfixExpression\nGot: {:?}", e),
         };
+    }
+}
+
+#[test]
+fn test_operator_precedence_parsing() {
+    struct Test {
+        input: Vec<u8>,
+        expected: String,
+    }
+    let tests: Vec<Test> = vec![
+        Test {
+            input: b"-a * b".to_vec(),
+            expected: String::from("((-a) * b)"),
+        },
+        Test {
+            input: b"!-a".to_vec(),
+            expected: String::from("(!(-a))"),
+        },
+        Test {
+            input: b"a + b + c".to_vec(),
+            expected: String::from("((a + b) + c)"),
+        },
+        Test {
+            input: b"a + b - c".to_vec(),
+            expected: String::from("((a + b) - c)"),
+        },
+        Test {
+            input: b"a * b * c".to_vec(),
+            expected: String::from("((a * b) * c)"),
+        },
+        Test {
+            input: b"a * b / c".to_vec(),
+            expected: String::from("((a * b) / c)"),
+        },
+        Test {
+            input: b"a + b / c".to_vec(),
+            expected: String::from("(a + (b / c))"),
+        },
+        Test {
+            input: b"a + b * c + d / e - f".to_vec(),
+            expected: String::from("(((a + (b * c)) + (d / e)) - f)"),
+        },
+        Test {
+            input: b"3 + 4; -5 * 5".to_vec(),
+            expected: String::from("(3 + 4)((-5) * 5)"),
+        },
+        Test {
+            input: b"5 > 4 == 3 < 4".to_vec(),
+            expected: String::from("((5 > 4) == (3 < 4))"),
+        },
+        Test {
+            input: b"5 < 4 != 3 > 4".to_vec(),
+            expected: String::from("((5 < 4) != (3 > 4))"),
+        },
+        Test {
+            input: b"3 + 4 * 5 == 3 * 1 + 4 * 5".to_vec(),
+            expected: String::from("((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"),
+        },
+        Test {
+            input: b"true".to_vec(),
+            expected: String::from("true"),
+        },
+        Test {
+            input: b"false".to_vec(),
+            expected: String::from("false"),
+        },
+        Test {
+            input: b"3 > 5 == false".to_vec(),
+            expected: String::from("((3 > 5) == false)"),
+        },
+        Test {
+            input: b"3 < 5 == true".to_vec(),
+            expected: String::from("((3 < 5) == true)"),
+        },
+        Test {
+            input: b"1 + (2 + 3) + 4".to_vec(),
+            expected: String::from("((1 + (2 + 3)) + 4)"),
+        },
+        Test {
+            input: b"(5 + 5) * 2".to_vec(),
+            expected: String::from("((5 + 5) * 2)"),
+        },
+        Test {
+            input: b"2 / (5 + 5)".to_vec(),
+            expected: String::from("(2 / (5 + 5))"),
+        },
+        Test {
+            input: b"-(5 + 5)".to_vec(),
+            expected: String::from("(-(5 + 5))"),
+        },
+        Test {
+            input: b"!(true == true)".to_vec(),
+            expected: String::from("(!(true == true))"),
+        },
+        // Test {
+        //     input: b"a + add(b * c) + d".to_vec(),
+        //     expected: String::from("((a + add((b * c))) + d)"),
+        // },
+        // Test {
+        //     input: b"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))".to_vec(),
+        //     expected: String::from("add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"),
+        // },
+        // Test {
+        //     input: b"add(a + b + c * d / f + g)".to_vec(),
+        //     expected: String::from("add((((a + b) + ((c * d) / f)) + g))"),
+        // },
+        // Test {
+        //     input: b"a * [1, 2, 3, 4][b * c] * d".to_vec(),
+        //     expected: String::from("((a * ([1, 2, 3, 4][(b * c)])) * d)"),
+        // },
+        // Test {
+        //     input: b"add(a * b[2], b[1], 2 * [1, 2][1])".to_vec(),
+        //     expected: String::from("add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"),
+        // },
+    ];
+
+    for test in tests {
+        let lexer = Lexer::new(&test.input);
+        let mut parser = Parser::new(lexer).unwrap();
+        let program = parser.parse_program().unwrap();
+        dbg!(&program);
+        assert_eq!(format!("{}", program), test.expected);
+    }
+}
+
+#[test]
+fn test_boolean_expression() {
+    struct Test {
+        input: Vec<u8>,
+        expected: bool,
+    }
+    let tests: Vec<Test> = vec![
+        Test {
+            input: b"true;".to_vec(),
+            expected: true,
+        },
+        Test {
+            input: b"false;".to_vec(),
+            expected: false,
+        },
+    ];
+
+    for test in tests {
+        let lexer = Lexer::new(&test.input);
+        let mut parser = Parser::new(lexer).unwrap();
+        let program = parser.parse_program().unwrap();
+
+        assert_eq!(program.statements.len(), 1);
+        let expression_statement = match &program.statements[0] {
+            Statement::Expression { expression, .. } => expression,
+            e => panic!("Expected: Statement::Expression\nGot: {:?}", e),
+        };
+        match expression_statement {
+            Expression::Boolean { value, .. } => {
+                assert_eq!(value, &test.expected);
+            }
+            e => panic!("Expected: Expression::Boolean\nGot: {:?}", e),
+        }
+    }
+}
+
+#[test]
+fn test_if_expression() {
+    let input = b"if (x < y) { x }";
+    let lexer = Lexer::new(input);
+    let mut parser = Parser::new(lexer).unwrap();
+    let program = parser.parse_program().unwrap();
+    dbg!(&program);
+    assert_eq!(program.statements.len(), 1);
+    let expression_statement = match &program.statements[0] {
+        Statement::Expression { expression, .. } => expression,
+        e => panic!("Expected: Statement::Expression\nGot: {:?}", e),
+    };
+    let (condition, consequence, alternative) = match expression_statement {
+        Expression::IfExpression {
+            condition,
+            consequence,
+            alternative,
+            ..
+        } => (condition, consequence, alternative),
+        e => panic!("Expected: Expression::IfExpression\nGot: {:?}", e),
+    };
+    let (left, operator, right) = match condition.deref() {
+        Expression::InfixExpression {
+            left,
+            operator,
+            right,
+            ..
+        } => (left, operator, right),
+        e => panic!("Expected: Expression::InfixExpression\nGot: {:?}", e),
+    };
+    let con_left = match left.deref() {
+        Expression::Identifier { value, .. } => value,
+        e => panic!("Expected: Expression::Identifier\nGot: {:?}", e),
+    };
+    let con_right = match right.deref() {
+        Expression::Identifier { value, .. } => value,
+        e => panic!("Expected: Expression::Identifier\nGot: {:?}", e),
+    };
+    assert_eq!(con_left, "x");
+    assert_eq!(operator, b"<");
+    assert_eq!(con_right, "y");
+    let statements = match consequence.deref() {
+        Expression::BlockStatement { statements, .. } => statements,
+        e => panic!("Expected: Expression::BlockStatement\nGot: {:?}", e),
+    };
+    assert_eq!(statements.len(), 1);
+    let statement = match &statements[0] {
+        Statement::Expression { expression, .. } => expression,
+        e => panic!("Expected: Statement::Expression\nGot: {:?}", e),
+    };
+    match statement {
+        Expression::Identifier { value, .. } => {
+            assert_eq!(value, "x");
+        }
+        e => panic!("Expected: Expression::Identifier\nGot: {:?}", e),
+    };
+    match alternative {
+        None => (),
+        _ => panic!("The alternative statements where not None"),
     }
 }
