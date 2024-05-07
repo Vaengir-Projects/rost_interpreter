@@ -148,7 +148,7 @@ fn parsing_prefix_expression() {
 }
 
 #[test]
-fn test_parsing_infix_expression() {
+fn parsing_infix_expression() {
     #[derive(Debug)]
     struct Test {
         input: Vec<u8>,
@@ -234,7 +234,7 @@ fn test_parsing_infix_expression() {
 }
 
 #[test]
-fn test_operator_precedence_parsing() {
+fn operator_precedence_parsing() {
     struct Test {
         input: Vec<u8>,
         expected: String,
@@ -356,7 +356,7 @@ fn test_operator_precedence_parsing() {
 }
 
 #[test]
-fn test_boolean_expression() {
+fn boolean_expression() {
     struct Test {
         input: Vec<u8>,
         expected: bool,
@@ -392,7 +392,7 @@ fn test_boolean_expression() {
 }
 
 #[test]
-fn test_if_expression() {
+fn if_expression() {
     let input = b"if (x < y) { x }";
     let lexer = Lexer::new(input);
     let mut parser = Parser::new(lexer).unwrap();
@@ -450,5 +450,104 @@ fn test_if_expression() {
     match alternative {
         None => (),
         _ => panic!("The alternative statements where not None"),
+    }
+}
+
+#[test]
+fn function_literal_parsing() {
+    let input = b"fn(x, y) { x + y; }";
+    let lexer = Lexer::new(input);
+    let mut parser = Parser::new(lexer).unwrap();
+    let program = parser.parse_program().unwrap();
+    dbg!(&program);
+    assert_eq!(program.statements.len(), 1);
+    let expression_statement = match &program.statements[0] {
+        Statement::Expression { expression, .. } => expression,
+        e => panic!("Expected: Statement::Expression\nGot: {:?}", e),
+    };
+    let (body, parameters) = match expression_statement {
+        Expression::FunctionLiteral {
+            parameters, body, ..
+        } => (body, parameters),
+        e => panic!("Expected: Expression::FunctionLiteral\nGot: {:?}", e),
+    };
+    assert_eq!(parameters.len(), 2);
+    match &parameters[0] {
+        Expression::Identifier { value, .. } => assert_eq!(value, "x"),
+        e => panic!("Expected: Expression::Identifier\nGot: {:?}", e),
+    }
+    match &parameters[1] {
+        Expression::Identifier { value, .. } => assert_eq!(value, "y"),
+        e => panic!("Expected: Expression::Identifier\nGot: {:?}", e),
+    }
+    let statements = match body.deref() {
+        Expression::BlockStatement { statements, .. } => statements,
+        e => panic!("Expected: Expression::Identifier\nGot: {:?}", e),
+    };
+    assert_eq!(statements.len(), 1);
+    let body_statement = match &statements[0] {
+        Statement::Expression { expression, .. } => expression,
+        e => panic!("Expected: Statement::Expression\nGot: {:?}", e),
+    };
+    let (left, operator, right) = match body_statement {
+        Expression::InfixExpression {
+            left,
+            operator,
+            right,
+            ..
+        } => (left, operator, right),
+        e => panic!("Expected: Expression::InfixExpression\nGot: {:?}", e),
+    };
+    match left.deref() {
+        Expression::Identifier { value, .. } => assert_eq!(value, "x"),
+        e => panic!("Expected: Expression::Identifier\nGot: {:?}", e),
+    }
+    assert_eq!(operator, b"+");
+    match right.deref() {
+        Expression::Identifier { value, .. } => assert_eq!(value, "y"),
+        e => panic!("Expected: Expression::Identifier\nGot: {:?}", e),
+    }
+}
+
+#[test]
+fn function_parameter_parsing() {
+    struct Test {
+        input: Vec<u8>,
+        expected_params: Vec<u8>,
+    }
+    let tests: Vec<Test> = vec![
+        Test {
+            input: b"fn() {};".to_vec(),
+            expected_params: b"".to_vec(),
+        },
+        Test {
+            input: b"fn(x) {};".to_vec(),
+            expected_params: b"x".to_vec(),
+        },
+        Test {
+            input: b"fn(x, y, z) {};".to_vec(),
+            expected_params: b"xyz".to_vec(),
+        },
+    ];
+
+    for test in tests {
+        let lexer = Lexer::new(&test.input);
+        let mut parser = Parser::new(lexer).unwrap();
+        let program = parser.parse_program().unwrap();
+        let expression_statement = match &program.statements[0] {
+            Statement::Expression { expression, .. } => expression,
+            e => panic!("Expected: Statement::Expression\nGot: {:?}", e),
+        };
+        let function_params = match expression_statement {
+            Expression::FunctionLiteral { parameters, .. } => parameters,
+            e => panic!("Expected: Expression::FunctionLiteral\nGot: {:?}", e),
+        };
+        assert_eq!(function_params.len(), test.expected_params.len());
+        for (i, ident) in test.expected_params.iter().enumerate() {
+            match &function_params[i] {
+                Expression::Identifier { value, .. } => assert_eq!(&value.as_bytes()[0], ident),
+                e => panic!("Expected: Expression::Identifier\nGot: {:?}", e),
+            }
+        }
     }
 }

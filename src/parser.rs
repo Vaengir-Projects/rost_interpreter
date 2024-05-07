@@ -65,6 +65,7 @@ impl Parser {
             TokenType::True | TokenType::False => self.parse_boolean()?,
             TokenType::LParen => self.parse_grouped_expression()?,
             TokenType::If => self.parse_if_expression()?,
+            TokenType::Function => self.parse_function_literal()?,
             e => return Err(anyhow!("No prefix function implemented for {:?}", e)),
         };
         let mut left_expr = prefix;
@@ -245,6 +246,57 @@ impl Parser {
             self.next_token()?;
         }
         Ok(Expression::BlockStatement { token, statements })
+    }
+
+    fn parse_function_literal(&mut self) -> anyhow::Result<Expression> {
+        let token = self.cur_token.clone();
+        if !self.expect_peek(TokenType::LParen)? {
+            return Err(anyhow!(
+                "Expected: TokenType::LParen\nGot: {:?}",
+                self.peek_token
+            ));
+        }
+        let parameters = self.parse_function_parameters()?;
+        if !self.expect_peek(TokenType::LBrace)? {
+            return Err(anyhow!(
+                "Expected: TokenType::LBrace\nGot: {:?}",
+                self.peek_token
+            ));
+        }
+        let body = Box::new(self.parse_block_statement()?);
+        Ok(Expression::FunctionLiteral {
+            token,
+            parameters,
+            body,
+        })
+    }
+
+    fn parse_function_parameters(&mut self) -> anyhow::Result<Vec<Expression>> {
+        let mut identifiers: Vec<Expression> = Vec::new();
+        if self.peek_token_is(TokenType::RParen) {
+            self.next_token()?;
+            return Ok(identifiers);
+        }
+        self.next_token()?;
+        identifiers.push(Expression::Identifier {
+            token: self.cur_token.clone(),
+            value: self.cur_token.literal.clone(),
+        });
+        while self.peek_token_is(TokenType::Comma) {
+            self.next_token()?;
+            self.next_token()?;
+            identifiers.push(Expression::Identifier {
+                token: self.cur_token.clone(),
+                value: self.cur_token.literal.clone(),
+            });
+        }
+        if !self.expect_peek(TokenType::RParen)? {
+            panic!(
+                "Next TokenType should be 'RParen'\nGot: {:?}",
+                self.cur_token
+            );
+        }
+        Ok(identifiers)
     }
 
     fn cur_token_is(&self, token_type: TokenType) -> bool {
