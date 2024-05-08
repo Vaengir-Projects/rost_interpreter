@@ -534,6 +534,7 @@ fn function_parameter_parsing() {
         let lexer = Lexer::new(&test.input);
         let mut parser = Parser::new(lexer).unwrap();
         let program = parser.parse_program().unwrap();
+        assert_eq!(program.statements.len(), 1);
         let expression_statement = match &program.statements[0] {
             Statement::Expression { expression, .. } => expression,
             e => panic!("Expected: Statement::Expression\nGot: {:?}", e),
@@ -549,5 +550,75 @@ fn function_parameter_parsing() {
                 e => panic!("Expected: Expression::Identifier\nGot: {:?}", e),
             }
         }
+    }
+}
+
+#[test]
+fn call_expression_parsing() {
+    let input = b"add(1, 2 * 3, 4 + 5);";
+    let lexer = Lexer::new(input);
+    let mut parser = Parser::new(lexer).unwrap();
+    let program = parser.parse_program().unwrap();
+    assert_eq!(program.statements.len(), 1);
+    let expression_statement = match &program.statements[0] {
+        Statement::Expression { expression, .. } => expression,
+        e => panic!("Expected: Statement::Expression\nGot: {:?}", e),
+    };
+    let (function, arguments) = match expression_statement {
+        Expression::CallExpression {
+            function,
+            arguments,
+            ..
+        } => (function, arguments),
+        e => panic!("Expected: Expression::CallExpression\nGot: {:?}", e),
+    };
+    match function.deref() {
+        Expression::Identifier { value, .. } => {
+            assert_eq!(value, "add");
+        }
+        e => panic!("Expected: Expression::Identifier\nGot: {:?}", e),
+    }
+    assert_eq!(arguments.len(), 3);
+    match &arguments[0] {
+        Expression::IntegerLiteral { value, .. } => assert_eq!(value, &1),
+        e => panic!("Expected: Expression::IntegerLiteral\nGot: {:?}", e),
+    }
+    match &arguments[1] {
+        Expression::InfixExpression {
+            left,
+            operator,
+            right,
+            ..
+        } => {
+            match left.deref() {
+                Expression::IntegerLiteral { value, .. } => assert_eq!(value, &2),
+                e => panic!("Expected: Expression::IntegerLiteral\nGot: {:?}", e),
+            }
+            assert_eq!(operator, b"*");
+            match right.deref() {
+                Expression::IntegerLiteral { value, .. } => assert_eq!(value, &3),
+                e => panic!("Expected: Expression::IntegerLiteral\nGot: {:?}", e),
+            }
+        }
+        e => panic!("Expected: Expression::InfixExpression\nGot: {:?}", e),
+    }
+    match &arguments[2] {
+        Expression::InfixExpression {
+            left,
+            operator,
+            right,
+            ..
+        } => {
+            match left.deref() {
+                Expression::IntegerLiteral { value, .. } => assert_eq!(value, &4),
+                e => panic!("Expected: Expression::IntegerLiteral\nGot: {:?}", e),
+            }
+            assert_eq!(operator, b"+");
+            match right.deref() {
+                Expression::IntegerLiteral { value, .. } => assert_eq!(value, &5),
+                e => panic!("Expected: Expression::IntegerLiteral\nGot: {:?}", e),
+            }
+        }
+        e => panic!("Expected: Expression::InfixExpression\nGot: {:?}", e),
     }
 }

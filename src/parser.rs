@@ -79,6 +79,7 @@ impl Parser {
                 | TokenType::NotEq
                 | TokenType::LessThan
                 | TokenType::GreaterThan => self.parse_infix_expression(Box::new(left_expr))?,
+                TokenType::LParen => self.parse_call_expression(Box::new(left_expr))?,
                 e => return Err(anyhow!("No infix function implemented for {:?}", e)),
             };
             left_expr = infix;
@@ -297,6 +298,39 @@ impl Parser {
             );
         }
         Ok(identifiers)
+    }
+
+    fn parse_call_expression(&mut self, function: Box<Expression>) -> anyhow::Result<Expression> {
+        let token = self.cur_token.clone();
+        let arguments = self.parse_call_arguments()?;
+        Ok(Expression::CallExpression {
+            token,
+            function,
+            arguments,
+        })
+    }
+
+    fn parse_call_arguments(&mut self) -> anyhow::Result<Vec<Expression>> {
+        self.next_token()?;
+        let mut arguments: Vec<Expression> = Vec::new();
+        if self.peek_token_is(TokenType::RParen) {
+            self.next_token()?;
+            return Ok(arguments);
+        }
+        self.next_token()?;
+        arguments.push(self.parse_expression(&LOWEST)?);
+        while self.peek_token_is(TokenType::Comma) {
+            self.next_token()?;
+            self.next_token()?;
+            arguments.push(self.parse_expression(&LOWEST)?);
+        }
+        if !self.expect_peek(TokenType::RParen)? {
+            return Err(anyhow!(
+                "Next TokenType should be 'RParen'\nGot: {:?}",
+                self.peek_token
+            ));
+        }
+        Ok(arguments)
     }
 
     fn cur_token_is(&self, token_type: TokenType) -> bool {

@@ -116,7 +116,11 @@ pub enum Expression {
         parameters: Vec<Expression>,
         body: Box<Expression>,
     },
-    CallExpression {},
+    CallExpression {
+        token: Token,
+        function: Box<Expression>,
+        arguments: Vec<Expression>,
+    },
     StringLiteral {},
     ArrayLiteral {},
     IndexExpression {},
@@ -134,7 +138,7 @@ impl NodeTrait for Expression {
             Expression::IfExpression { token, .. } => token.literal.clone(),
             Expression::BlockStatement { token, .. } => token.literal.clone(),
             Expression::FunctionLiteral { token, .. } => token.literal.clone(),
-            Expression::CallExpression {} => todo!(),
+            Expression::CallExpression { token, .. } => token.literal.clone(),
             Expression::StringLiteral {} => todo!(),
             Expression::ArrayLiteral {} => todo!(),
             Expression::IndexExpression {} => todo!(),
@@ -198,7 +202,18 @@ impl Display for Expression {
                     .join(", ");
                 write!(f, "Here: {}({}) {}", self.token_literal(), parameters, body)
             }
-            Expression::CallExpression {} => todo!(),
+            Expression::CallExpression {
+                function,
+                arguments,
+                ..
+            } => {
+                let arguments = arguments
+                    .iter()
+                    .map(|p| p.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                write!(f, "{}({})", function, arguments,)
+            }
             Expression::StringLiteral {} => todo!(),
             Expression::ArrayLiteral {} => todo!(),
             Expression::IndexExpression {} => todo!(),
