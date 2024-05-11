@@ -99,36 +99,24 @@ impl Parser {
         if !self.expect_peek(TokenType::Assign)? {
             return Err(anyhow!("Expected next TokenType::Assign"));
         }
-        // TODO: Parse Expressions
-        // self.next_token()?;
-        // let value = self.parse_expression(&LOWEST)?;
-        // if self.peek_token_is(TokenType::Semicolon) {
-        //     self.next_token()?;
-        // }
-        while !self.cur_token_is(TokenType::Semicolon) {
+        self.next_token()?;
+        let value = self.parse_expression(&LOWEST)?;
+        if self.peek_token_is(TokenType::Semicolon) {
             self.next_token()?;
         }
-        Ok(Statement::Let {
-            token,
-            name,
-            value: Expression::Default,
-        })
+        Ok(Statement::Let { token, name, value })
     }
 
     fn parse_return_statement(&mut self) -> anyhow::Result<Statement> {
         let token = self.cur_token.clone();
         self.next_token()?;
-        // TODO: Parse Expressions
-        // let return_value = self.parse_expression(&LOWEST)?;
-        // if self.peek_token_is(TokenType::Semicolon) {
-        //     self.next_token()?;
-        // }
-        while !self.cur_token_is(TokenType::Semicolon) {
+        let return_value = self.parse_expression(&LOWEST)?;
+        if self.peek_token_is(TokenType::Semicolon) {
             self.next_token()?;
         }
         Ok(Statement::Return {
             token,
-            return_value: Expression::Default,
+            return_value,
         })
     }
 

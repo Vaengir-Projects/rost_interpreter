@@ -14,55 +14,150 @@ fn test_integer_literal(integer_expression: &Expression, expected_value: i64) {
     }
 }
 
-fn test_let_statement(statement: &Statement, expected_name: &str) {
-    assert_eq!(statement.token_literal(), String::from("let"));
-    match statement {
-        Statement::Let { name, .. } => match name {
-            Expression::Identifier { ref value, .. } => {
-                assert_eq!(name.token_literal(), expected_name);
-                assert_eq!(value, expected_name);
-            }
-            e => panic!("Name is not an ExpressionIdentifier\nGot: {:?}", e),
-        },
-        e => panic!("Not a Statement::Let\nGot: {:?}", e),
-    }
-}
-
 #[test]
 fn let_statements() {
-    let input = b"
-let x = 5;
-let y = 10;
-let foobar = 838383;";
-
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer).unwrap();
-    let program = parser.parse_program().unwrap();
-    assert_eq!(program.statements.len(), 3);
-    let tests = [String::from("x"), String::from("y"), String::from("foobar")];
-    for (i, test) in tests.iter().enumerate() {
-        let statement = &program.statements[i];
-        test_let_statement(statement, test);
+    dbg!("BlaBla");
+    #[derive(Debug)]
+    enum Used {
+        Int(i64),
+        Bool(bool),
+        String(String),
+    }
+    #[derive(Debug)]
+    struct Test {
+        input: Vec<u8>,
+        expected_identifier: String,
+        expected_value: Used,
+    }
+    let tests: Vec<Test> = vec![
+        Test {
+            input: b"let x = 5;".to_vec(),
+            expected_identifier: String::from("x"),
+            expected_value: Used::Int(5),
+        },
+        Test {
+            input: b"let y = true;".to_vec(),
+            expected_identifier: String::from("y"),
+            expected_value: Used::Bool(true),
+        },
+        Test {
+            input: b"let foobar = y;".to_vec(),
+            expected_identifier: String::from("foobar"),
+            expected_value: Used::String(String::from("y")),
+        },
+    ];
+    for test in tests {
+        let lexer = Lexer::new(&test.input);
+        let mut parser = Parser::new(lexer).unwrap();
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.statements.len(), 1);
+        let (name, value) = match &program.statements[0] {
+            Statement::Let { name, value, .. } => (name, value),
+            e => panic!("Not a Statement::Let\nGot: {:?}", e),
+        };
+        match name {
+            Expression::Identifier { value, .. } => assert_eq!(value, &test.expected_identifier),
+            e => panic!("Expected Expression::Identifier\nGot: {:?}", e),
+        }
+        match test.expected_value {
+            Used::Int(i) => {
+                match value {
+                    Expression::IntegerLiteral { value, .. } => assert_eq!(value, &i),
+                    e => panic!(
+                        "Not the right kind of Expression. Expected: IntegerLiteral\nGot: {}",
+                        e
+                    ),
+                };
+            }
+            Used::Bool(b) => {
+                match value {
+                    Expression::Boolean { value, .. } => assert_eq!(value, &b),
+                    e => panic!(
+                        "Not the right kind of Expression. Expected: IntegerLiteral\nGot: {}",
+                        e
+                    ),
+                };
+            }
+            Used::String(s) => {
+                match value {
+                    Expression::Identifier { value, .. } => assert_eq!(value, &s),
+                    e => panic!(
+                        "Not the right kind of Expression. Expected: IntegerLiteral\nGot: {}",
+                        e
+                    ),
+                };
+            }
+        }
     }
 }
 
 #[test]
 fn return_statements() {
-    let input = b"
-return 5;
-return 10;
-return 993322;";
-
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer).unwrap();
-    let program = parser.parse_program().unwrap();
-    assert_eq!(program.statements.len(), 3);
-    for statement in program.statements {
-        match statement {
-            Statement::Return { .. } => {
-                assert_eq!(statement.token_literal(), String::from("return"));
+    #[derive(Debug)]
+    enum Used {
+        Int(i64),
+        Bool(bool),
+        String(String),
+    }
+    #[derive(Debug)]
+    struct Test {
+        input: Vec<u8>,
+        expected_value: Used,
+    }
+    let tests: Vec<Test> = vec![
+        Test {
+            input: b"return 5;".to_vec(),
+            expected_value: Used::Int(5),
+        },
+        Test {
+            input: b"return true;".to_vec(),
+            expected_value: Used::Bool(true),
+        },
+        Test {
+            input: b"return foobar;".to_vec(),
+            expected_value: Used::String(String::from("foobar")),
+        },
+    ];
+    for test in tests {
+        let lexer = Lexer::new(&test.input);
+        let mut parser = Parser::new(lexer).unwrap();
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.statements.len(), 1);
+        let return_statement = match &program.statements[0] {
+            Statement::Return { return_value, .. } => return_value,
+            e => panic!(
+                "Not the right kind of Statement. Expected: ReturnStatement\nGot: {}",
+                e
+            ),
+        };
+        match test.expected_value {
+            Used::Int(i) => {
+                match return_statement {
+                    Expression::IntegerLiteral { value, .. } => assert_eq!(value, &i),
+                    e => panic!(
+                        "Not the right kind of Expression. Expected: IntegerLiteral\nGot: {}",
+                        e
+                    ),
+                };
             }
-            e => panic!("Not a Statement::Return\nGot: {:?}", e),
+            Used::Bool(b) => {
+                match return_statement {
+                    Expression::Boolean { value, .. } => assert_eq!(value, &b),
+                    e => panic!(
+                        "Not the right kind of Expression. Expected: Boolean\nGot: {}",
+                        e
+                    ),
+                };
+            }
+            Used::String(s) => {
+                match return_statement {
+                    Expression::Identifier { value, .. } => assert_eq!(value, &s),
+                    e => panic!(
+                        "Not the right kind of Expression. Expected: Identifier\nGot: {}",
+                        e
+                    ),
+                };
+            }
         }
     }
 }
@@ -324,18 +419,18 @@ fn operator_precedence_parsing() {
             input: b"!(true == true)".to_vec(),
             expected: String::from("(!(true == true))"),
         },
-        // Test {
-        //     input: b"a + add(b * c) + d".to_vec(),
-        //     expected: String::from("((a + add((b * c))) + d)"),
-        // },
-        // Test {
-        //     input: b"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))".to_vec(),
-        //     expected: String::from("add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"),
-        // },
-        // Test {
-        //     input: b"add(a + b + c * d / f + g)".to_vec(),
-        //     expected: String::from("add((((a + b) + ((c * d) / f)) + g))"),
-        // },
+        Test {
+            input: b"a + add(b * c) + d".to_vec(),
+            expected: String::from("((a + add((b * c))) + d)"),
+        },
+        Test {
+            input: b"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))".to_vec(),
+            expected: String::from("add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"),
+        },
+        Test {
+            input: b"add(a + b + c * d / f + g)".to_vec(),
+            expected: String::from("add((((a + b) + ((c * d) / f)) + g))"),
+        },
         // Test {
         //     input: b"a * [1, 2, 3, 4][b * c] * d".to_vec(),
         //     expected: String::from("((a * ([1, 2, 3, 4][(b * c)])) * d)"),
