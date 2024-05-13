@@ -5,9 +5,12 @@ pub trait NodeTrait: Display {
     fn token_literal(&self) -> String;
 }
 
-pub trait StatementTrait: NodeTrait {}
-
-pub trait ExpressionTrait: NodeTrait {}
+#[derive(Debug)]
+pub enum Node<'a> {
+    Statement(&'a Statement),
+    Expression(&'a Expression),
+    Program(&'a Program),
+}
 
 #[derive(Debug)]
 pub struct Program {
