@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-trait ObjectTrait: Display {
+pub trait ObjectTrait: Display {
     fn r#type(&self) -> String;
 }
 
@@ -8,7 +8,6 @@ trait ObjectTrait: Display {
 pub enum Object {
     Integer { value: i64 },
     Boolean { value: bool },
-    PrefixExpression {},
     ReturnValue {},
     Function {},
     String {},
@@ -21,7 +20,6 @@ impl ObjectTrait for Object {
         match self {
             Object::Integer { .. } => String::from("INTEGER"),
             Object::Boolean { .. } => String::from("BOOLEAN"),
-            Object::PrefixExpression {} => todo!(),
             Object::ReturnValue {} => todo!(),
             Object::Function {} => todo!(),
             Object::String {} => todo!(),
@@ -36,7 +34,6 @@ impl Display for Object {
         match self {
             Object::Integer { value } => write!(f, "{}", value),
             Object::Boolean { value } => write!(f, "{}", value),
-            Object::PrefixExpression {} => todo!(),
             Object::ReturnValue {} => todo!(),
             Object::Function {} => todo!(),
             Object::String {} => todo!(),
