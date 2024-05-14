@@ -281,49 +281,49 @@ fn test_if_else_expressions() {
     }
 }
 
-// #[test]
-// fn test_return_statements() {
-//     struct Test {
-//         input: Vec<u8>,
-//         expected: i64,
-//     }
-//     let tests = vec![
-//         Test {
-//             input: b"return 10;".to_vec(),
-//             expected: 10,
-//         },
-//         Test {
-//             input: b"return 10; 9;".to_vec(),
-//             expected: 10,
-//         },
-//         Test {
-//             input: b"return 2 * 5; 9;".to_vec(),
-//             expected: 10,
-//         },
-//         Test {
-//             input: b"9; return 2 * 5; 9;".to_vec(),
-//             expected: 10,
-//         },
-//         Test {
-//             input: b"if (10 > 1) { if (10 > 1) { return 10; } return 1;}".to_vec(),
-//             expected: 10,
-//         },
-//         Test {
-//             input: b"let f = fn(x) { return x; x + 10; }; f(10);".to_vec(),
-//             expected: 10,
-//         },
-//         Test {
-//             input: b"let f = fn(x) { let result = x + 10; return result; return 10; }; f(10);"
-//                 .to_vec(),
-//             expected: 20,
-//         },
-//     ];
-//     for test in tests {
-//         let evaluated = test_eval(&test.input).unwrap();
-//         integer_object(evaluated, test.expected);
-//     }
-// }
-//
+#[test]
+fn test_return_statements() {
+    struct Test {
+        input: Vec<u8>,
+        expected: i64,
+    }
+    let tests = vec![
+        Test {
+            input: b"return 10;".to_vec(),
+            expected: 10,
+        },
+        Test {
+            input: b"return 10; 9;".to_vec(),
+            expected: 10,
+        },
+        Test {
+            input: b"return 2 * 5; 9;".to_vec(),
+            expected: 10,
+        },
+        Test {
+            input: b"9; return 2 * 5; 9;".to_vec(),
+            expected: 10,
+        },
+        //         Test {
+        //             input: b"if (10 > 1) { if (10 > 1) { return 10; } return 1;}".to_vec(),
+        //             expected: 10,
+        //         },
+        //         Test {
+        //             input: b"let f = fn(x) { return x; x + 10; }; f(10);".to_vec(),
+        //             expected: 10,
+        //         },
+        //         Test {
+        //             input: b"let f = fn(x) { let result = x + 10; return result; return 10; }; f(10);"
+        //                 .to_vec(),
+        //             expected: 20,
+        //         },
+    ];
+    for test in tests {
+        let evaluated = test_eval(&test.input).unwrap();
+        integer_object(evaluated, test.expected);
+    }
+}
+
 // #[test]
 // fn test_error_handling() {
 //     struct Test {

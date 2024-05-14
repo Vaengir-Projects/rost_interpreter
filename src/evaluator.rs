@@ -18,10 +18,10 @@ impl Evaluator {
             Node::Program(p) => Evaluator::eval_statements(&p.statements),
             Node::Statement(s) => match s {
                 crate::ast::Statement::Let { token, name, value } => todo!(),
-                crate::ast::Statement::Return {
-                    token,
-                    return_value,
-                } => todo!(),
+                crate::ast::Statement::Return { return_value, .. } => {
+                    let value = Box::new(Evaluator::eval(Node::Expression(return_value))?);
+                    Ok(Object::ReturnValue { value })
+                }
                 crate::ast::Statement::Expression { expression, .. } => {
                     Evaluator::eval(Node::Expression(expression))
                 }
@@ -80,7 +80,10 @@ impl Evaluator {
     fn eval_statements(statements: &[Statement]) -> anyhow::Result<Object> {
         let mut result: Object = NULL;
         for statement in statements {
-            result = Evaluator::eval(Node::Statement(statement))?
+            result = Evaluator::eval(Node::Statement(statement))?;
+            if let Object::ReturnValue { value } = result {
+                return Ok(*value);
+            };
         }
         Ok(result)
     }

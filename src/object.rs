@@ -8,7 +8,7 @@ pub trait ObjectTrait: Display {
 pub enum Object {
     Integer { value: i64 },
     Boolean { value: bool },
-    ReturnValue {},
+    ReturnValue { value: Box<Object> },
     Function {},
     String {},
     BuiltIn {},
@@ -20,7 +20,7 @@ impl ObjectTrait for Object {
         match self {
             Object::Integer { .. } => String::from("INTEGER"),
             Object::Boolean { .. } => String::from("BOOLEAN"),
-            Object::ReturnValue {} => todo!(),
+            Object::ReturnValue { .. } => String::from("RETURN_VALUE"),
             Object::Function {} => todo!(),
             Object::String {} => todo!(),
             Object::BuiltIn {} => todo!(),
@@ -34,7 +34,7 @@ impl Display for Object {
         match self {
             Object::Integer { value } => write!(f, "{}", value),
             Object::Boolean { value } => write!(f, "{}", value),
-            Object::ReturnValue {} => todo!(),
+            Object::ReturnValue { value } => write!(f, "{}", value),
             Object::Function {} => todo!(),
             Object::String {} => todo!(),
             Object::BuiltIn {} => todo!(),
