@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expression, Node, Statement},
+    ast::{Expression, Node, Program, Statement},
     object::{Object, ObjectTrait},
 };
 use anyhow::{anyhow, Ok};
@@ -15,7 +15,7 @@ pub struct Evaluator;
 impl Evaluator {
     pub fn eval(node: Node) -> anyhow::Result<Object> {
         match node {
-            Node::Program(p) => Evaluator::eval_statements(&p.statements),
+            Node::Program(p) => Evaluator::eval_program(p),
             Node::Statement(s) => match s {
                 crate::ast::Statement::Let { token, name, value } => todo!(),
                 crate::ast::Statement::Return { return_value, .. } => {
@@ -57,7 +57,7 @@ impl Evaluator {
                     alternative,
                 )?),
                 Expression::BlockStatement { statements, .. } => {
-                    Evaluator::eval_statements(statements)
+                    Evaluator::eval_block_statement(statements)
                 }
                 Expression::FunctionLiteral {
                     token,
@@ -77,9 +77,9 @@ impl Evaluator {
         }
     }
 
-    fn eval_statements(statements: &[Statement]) -> anyhow::Result<Object> {
+    fn eval_program(program: &Program) -> anyhow::Result<Object> {
         let mut result: Object = NULL;
-        for statement in statements {
+        for statement in &program.statements {
             result = Evaluator::eval(Node::Statement(statement))?;
             if let Object::ReturnValue { value } = result {
                 return Ok(*value);
@@ -88,11 +88,22 @@ impl Evaluator {
         Ok(result)
     }
 
+    fn eval_block_statement(block: &[Statement]) -> anyhow::Result<Object> {
+        let mut result = Object::Null;
+        for statement in block {
+            result = Evaluator::eval(Node::Statement(statement))?;
+            if let Object::ReturnValue { .. } = result {
+                return Ok(result);
+            }
+        }
+        Ok(result)
+    }
+
     fn eval_prefix_expression(operator: &u8, right: Object) -> anyhow::Result<Object> {
         match operator {
             b'!' => Ok(Evaluator::eval_bang_operator_expression(right)),
             b'-' => Ok(Evaluator::eval_minus_operator_expression(right)?),
-            _ => Err(anyhow!("Couldn't parse {:?}{}", operator, right)),
+            _ => Err(anyhow!("{}{}", operator, right)),
         }
     }
 
@@ -108,7 +119,7 @@ impl Evaluator {
     fn eval_minus_operator_expression(right: Object) -> anyhow::Result<Object> {
         let integer = match right {
             Object::Integer { value } => value,
-            _ => return Err(anyhow!("Couldn't parse -{}", right)),
+            _ => return Err(anyhow!("-{}", right.r#type())),
         };
         Ok(Object::Integer { value: -integer })
     }
@@ -120,7 +131,7 @@ impl Evaluator {
     ) -> anyhow::Result<Object> {
         if left.r#type() != right.r#type() {
             return Err(anyhow!(
-                "Couldn't parse {} {:?} {}",
+                "{} {} {}",
                 left.r#type(),
                 String::from_utf8_lossy(operator),
                 right.r#type()
@@ -139,7 +150,7 @@ impl Evaluator {
                 b"==" => Ok(native_bool_to_bool_struct(&(left == right))),
                 b"!=" => Ok(native_bool_to_bool_struct(&(left != right))),
                 _ => Err(anyhow!(
-                    "Couldn't parse {} {} {}",
+                    "{} {} {}",
                     left.r#type(),
                     String::from_utf8_lossy(operator),
                     right.r#type()
@@ -171,7 +182,7 @@ impl Evaluator {
             b"==" => Ok(native_bool_to_bool_struct(&(left == right))),
             b"!=" => Ok(native_bool_to_bool_struct(&(left != right))),
             _ => Err(anyhow!(
-                "Couldn't parse {} {} {}",
+                "{} {} {}",
                 left,
                 String::from_utf8_lossy(operator),
                 right

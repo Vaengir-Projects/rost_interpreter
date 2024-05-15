@@ -9,7 +9,7 @@ fn test_eval(input: &[u8]) -> anyhow::Result<Object> {
     Evaluator::eval(Node::Program(&program))
 }
 
-fn integer_object(object: Object, expected: i64) {
+fn test_integer_object(object: Object, expected: i64) {
     match object {
         Object::Integer { value } => assert_eq!(value, expected),
         e => panic!("Expected Object::Integer\nGot: {:?}", e),
@@ -98,7 +98,7 @@ fn eval_integer_expression() {
     ];
     for test in tests {
         let evaluated = test_eval(&test.input).unwrap();
-        integer_object(evaluated, test.expected);
+        test_integer_object(evaluated, test.expected);
     }
 }
 
@@ -194,7 +194,7 @@ fn eval_boolean_expression() {
 }
 
 #[test]
-fn test_bang_operator() {
+fn bang_operator() {
     struct Test {
         input: Vec<u8>,
         expected: bool,
@@ -232,7 +232,7 @@ fn test_bang_operator() {
 }
 
 #[test]
-fn test_if_else_expressions() {
+fn if_else_expressions() {
     #[derive(Debug)]
     enum Res {
         Good(i64),
@@ -275,14 +275,14 @@ fn test_if_else_expressions() {
     for test in tests {
         let evaluated = test_eval(&test.input).unwrap();
         match test.expected {
-            Res::Good(i) => integer_object(evaluated, i),
+            Res::Good(i) => test_integer_object(evaluated, i),
             Res::NoGood => null_object(evaluated),
         }
     }
 }
 
 #[test]
-fn test_return_statements() {
+fn return_statements() {
     struct Test {
         input: Vec<u8>,
         expected: i64,
@@ -304,10 +304,10 @@ fn test_return_statements() {
             input: b"9; return 2 * 5; 9;".to_vec(),
             expected: 10,
         },
-        //         Test {
-        //             input: b"if (10 > 1) { if (10 > 1) { return 10; } return 1;}".to_vec(),
-        //             expected: 10,
-        //         },
+        Test {
+            input: b"if (10 > 1) { if (10 > 1) { return 10; } return 1;}".to_vec(),
+            expected: 10,
+        },
         //         Test {
         //             input: b"let f = fn(x) { return x; x + 10; }; f(10);".to_vec(),
         //             expected: 10,
@@ -320,74 +320,77 @@ fn test_return_statements() {
     ];
     for test in tests {
         let evaluated = test_eval(&test.input).unwrap();
-        integer_object(evaluated, test.expected);
+        test_integer_object(evaluated, test.expected);
+    }
+}
+
+#[test]
+fn error_handling() {
+    struct Test {
+        input: Vec<u8>,
+        expected_message: String,
+    }
+    let tests = vec![
+        Test {
+            input: b"5 + true;".to_vec(),
+            expected_message: String::from("INTEGER + BOOLEAN"),
+        },
+        Test {
+            input: b"5 + true; 5;".to_vec(),
+            expected_message: String::from("INTEGER + BOOLEAN"),
+        },
+        Test {
+            input: b"-true".to_vec(),
+            expected_message: String::from("-BOOLEAN"),
+        },
+        Test {
+            input: b"true + false;".to_vec(),
+            expected_message: String::from("BOOLEAN + BOOLEAN"),
+        },
+        Test {
+            input: b"5; true + false; 5".to_vec(),
+            expected_message: String::from("BOOLEAN + BOOLEAN"),
+        },
+        Test {
+            input: b"if (10 > 1) { true + false; }".to_vec(),
+            expected_message: String::from("BOOLEAN + BOOLEAN"),
+        },
+        Test {
+            input: b"if (10 > 1) {
+                            if (10 > 1) {
+                            return true + false;
+                            }
+                            return 1;
+                            }"
+            .to_vec(),
+            expected_message: String::from("BOOLEAN + BOOLEAN"),
+        },
+        //         Test {
+        //             input: b"foobar".to_vec(),
+        //             expected_message: String::from(
+        //                 "Identifier not found: foobar",
+        //             )),
+        //         },
+        //         Test {
+        //             input: b"\"Hello\" - \"World\"".to_vec(),
+        //             expected_message: String::from("STRING - STRING"),
+        //         },
+    ];
+    for test in tests {
+        let evaluated = test_eval(&test.input);
+        let err_object = match evaluated {
+            Ok(o) => panic!("Not an Error\nGot: {}", o),
+            Err(e) => e,
+        };
+        assert_eq!(
+            format!("{}", err_object),
+            format!("{}", test.expected_message)
+        );
     }
 }
 
 // #[test]
-// fn test_error_handling() {
-//     struct Test {
-//         input: Vec<u8>,
-//         expected_message: EvaluationError,
-//     }
-//     let tests = vec![
-//         Test {
-//             input: b"5 + true;".to_vec(),
-//             expected_message: EvaluationError::TypeError(String::from("INTEGER + BOOLEAN")),
-//         },
-//         Test {
-//             input: b"5 + true; 5;".to_vec(),
-//             expected_message: EvaluationError::TypeError(String::from("INTEGER + BOOLEAN")),
-//         },
-//         Test {
-//             input: b"-true".to_vec(),
-//             expected_message: EvaluationError::OperatorError(String::from("-BOOLEAN")),
-//         },
-//         Test {
-//             input: b"true + false;".to_vec(),
-//             expected_message: EvaluationError::OperatorError(String::from("BOOLEAN + BOOLEAN")),
-//         },
-//         Test {
-//             input: b"5; true + false; 5".to_vec(),
-//             expected_message: EvaluationError::OperatorError(String::from("BOOLEAN + BOOLEAN")),
-//         },
-//         Test {
-//             input: b"if (10 > 1) { true + false; }".to_vec(),
-//             expected_message: EvaluationError::OperatorError(String::from("BOOLEAN + BOOLEAN")),
-//         },
-//         Test {
-//             input: b"if (10 > 1) {
-//                     if (10 > 1) {
-//                     return true + false;
-//                     }
-//                     return 1;
-//                     }"
-//             .to_vec(),
-//             expected_message: EvaluationError::OperatorError(String::from("BOOLEAN + BOOLEAN")),
-//         },
-//         Test {
-//             input: b"foobar".to_vec(),
-//             expected_message: EvaluationError::IdentError(String::from(
-//                 "Identifier not found: foobar",
-//             )),
-//         },
-//         Test {
-//             input: b"\"Hello\" - \"World\"".to_vec(),
-//             expected_message: EvaluationError::OperatorError(String::from("STRING - STRING")),
-//         },
-//     ];
-//     for test in tests {
-//         let evaluated = test_eval(&test.input);
-//         let err_object = match evaluated {
-//             Ok(o) => panic!("Not an Error\nGot: {}", o),
-//             Err(e) => e,
-//         };
-//         assert_eq!(err_object, test.expected_message);
-//     }
-// }
-//
-// #[test]
-// fn test_let_statement() {
+// fn let_statement() {
 //     struct Test {
 //         input: Vec<u8>,
 //         expected: i64,
@@ -411,12 +414,12 @@ fn test_return_statements() {
 //         },
 //     ];
 //     for test in tests {
-//         integer_object(test_eval(&test.input).unwrap(), test.expected);
+//         test_integer_object(test_eval(&test.input).unwrap(), test.expected);
 //     }
 // }
-//
+
 // #[test]
-// fn test_function_object() {
+// fn function_object() {
 //     let input: &[u8] = b"fn(x) { x + 2; };";
 //     let evaluated = test_eval(input).unwrap();
 //     let func = match evaluated {
@@ -429,7 +432,7 @@ fn test_return_statements() {
 // }
 //
 // #[test]
-// fn test_function_application() {
+// fn function_application() {
 //     struct Test {
 //         input: Vec<u8>,
 //         expected: i64,
@@ -466,14 +469,14 @@ fn test_return_statements() {
 // }
 //
 // #[test]
-// fn test_closures() {
+// fn closures() {
 //     let input: &[u8] =
 //         b"let newAdder = fn(x) { fn(y) { x + y }; }; let addTwo = newAdder(2); addTwo(2);";
 //     integer_object(test_eval(input).unwrap(), 4)
 // }
 //
 // #[test]
-// fn test_string_literal() {
+// fn string_literal() {
 //     let input = b"\"Hello World!\"";
 //     let evaluated = test_eval(input).unwrap();
 //     let str = match evaluated {
@@ -484,7 +487,7 @@ fn test_return_statements() {
 // }
 //
 // #[test]
-// fn test_string_concatenation() {
+// fn string_concatenation() {
 //     let input = b"\"Hello\" + \" \" + \"World!\"";
 //     let evaluated = test_eval(input).unwrap();
 //     let str = match evaluated {
@@ -495,7 +498,7 @@ fn test_return_statements() {
 // }
 //
 // #[test]
-// fn test_builtin_functions() {
+// fn builtin_functions() {
 //     #[derive(Debug)]
 //     struct Test {
 //         input: String,
