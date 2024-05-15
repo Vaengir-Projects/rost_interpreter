@@ -1,10 +1,11 @@
-use std::fmt::Display;
+use anyhow::anyhow;
+use std::{collections::HashMap, fmt::Display};
 
 pub trait ObjectTrait: Display {
     fn r#type(&self) -> String;
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Object {
     Integer { value: i64 },
     Boolean { value: bool },
@@ -40,5 +41,42 @@ impl Display for Object {
             Object::BuiltIn {} => todo!(),
             Object::Null => write!(f, "null"),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Environment {
+    store: HashMap<String, Object>,
+    outer: Option<Box<Environment>>,
+}
+
+impl Environment {
+    pub fn new(outer: Option<Box<Environment>>) -> Environment {
+        Environment {
+            store: HashMap::new(),
+            outer,
+        }
+    }
+
+    pub fn get(&self, name: &str) -> anyhow::Result<Object> {
+        match self.store.get(name) {
+            Some(value) => Ok(value.clone()),
+            None => {
+                if self.outer.is_some() {
+                    Ok(self.outer.as_ref().unwrap().get(name)?)
+                } else {
+                    Err(anyhow!("Couldn't find {}", name))
+                }
+            }
+        }
+    }
+
+    pub fn set(&mut self, name: &str, val: Object) -> Object {
+        self.store.insert(name.to_string(), val.clone());
+        val
+    }
+
+    pub fn new_enclosed_environment(outer: &mut Environment) -> Environment {
+        Environment::new(Some(Box::new(outer.clone())))
     }
 }

@@ -1,8 +1,8 @@
 use crate::{
     ast::{Expression, Node, Program, Statement},
-    object::{Object, ObjectTrait},
+    object::{Environment, Object, ObjectTrait},
 };
-use anyhow::{anyhow, Ok};
+use anyhow::{anyhow, Context};
 use std::ops::Deref;
 
 const NULL: Object = Object::Null;
@@ -13,26 +13,32 @@ const FALSE: Object = Object::Boolean { value: false };
 pub struct Evaluator;
 
 impl Evaluator {
-    pub fn eval(node: Node) -> anyhow::Result<Object> {
+    pub fn eval(node: Node, env: &mut Environment) -> anyhow::Result<Object> {
         match node {
-            Node::Program(p) => Evaluator::eval_program(p),
+            Node::Program(p) => Evaluator::eval_program(p, env),
             Node::Statement(s) => match s {
-                crate::ast::Statement::Let { token, name, value } => todo!(),
+                crate::ast::Statement::Let { name, value, .. } => {
+                    let val = Evaluator::eval(Node::Expression(value), env)?;
+                    if let Expression::Identifier { value, .. } = name {
+                        return Ok(env.set(value, val));
+                    };
+                    unreachable!()
+                }
                 crate::ast::Statement::Return { return_value, .. } => {
-                    let value = Box::new(Evaluator::eval(Node::Expression(return_value))?);
+                    let value = Box::new(Evaluator::eval(Node::Expression(return_value), env)?);
                     Ok(Object::ReturnValue { value })
                 }
                 crate::ast::Statement::Expression { expression, .. } => {
-                    Evaluator::eval(Node::Expression(expression))
+                    Evaluator::eval(Node::Expression(expression), env)
                 }
             },
             Node::Expression(e) => match e {
                 Expression::IntegerLiteral { value, .. } => Ok(Object::Integer { value: *value }),
-                Expression::Identifier { token, value } => todo!(),
+                Expression::Identifier { value, .. } => Evaluator::eval_identifier(value, env),
                 Expression::PrefixExpression {
                     operator, right, ..
                 } => {
-                    let right = Evaluator::eval(Node::Expression(right.deref()))?;
+                    let right = Evaluator::eval(Node::Expression(right.deref()), env)?;
                     Ok(Evaluator::eval_prefix_expression(operator, right)?)
                 }
                 Expression::InfixExpression {
@@ -41,8 +47,8 @@ impl Evaluator {
                     right,
                     ..
                 } => {
-                    let left = Evaluator::eval(Node::Expression(left.deref()))?;
-                    let right = Evaluator::eval(Node::Expression(right.deref()))?;
+                    let left = Evaluator::eval(Node::Expression(left.deref()), env)?;
+                    let right = Evaluator::eval(Node::Expression(right.deref()), env)?;
                     Ok(Evaluator::eval_infix_expression(operator, left, right)?)
                 }
                 Expression::Boolean { value, .. } => Ok(native_bool_to_bool_struct(value)),
@@ -55,9 +61,10 @@ impl Evaluator {
                     condition.deref(),
                     consequence.deref(),
                     alternative,
+                    env,
                 )?),
                 Expression::BlockStatement { statements, .. } => {
-                    Evaluator::eval_block_statement(statements)
+                    Evaluator::eval_block_statement(statements, env)
                 }
                 Expression::FunctionLiteral {
                     token,
@@ -77,10 +84,10 @@ impl Evaluator {
         }
     }
 
-    fn eval_program(program: &Program) -> anyhow::Result<Object> {
+    fn eval_program(program: &Program, env: &mut Environment) -> anyhow::Result<Object> {
         let mut result: Object = NULL;
         for statement in &program.statements {
-            result = Evaluator::eval(Node::Statement(statement))?;
+            result = Evaluator::eval(Node::Statement(statement), env)?;
             if let Object::ReturnValue { value } = result {
                 return Ok(*value);
             };
@@ -88,10 +95,10 @@ impl Evaluator {
         Ok(result)
     }
 
-    fn eval_block_statement(block: &[Statement]) -> anyhow::Result<Object> {
+    fn eval_block_statement(block: &[Statement], env: &mut Environment) -> anyhow::Result<Object> {
         let mut result = Object::Null;
         for statement in block {
-            result = Evaluator::eval(Node::Statement(statement))?;
+            result = Evaluator::eval(Node::Statement(statement), env)?;
             if let Object::ReturnValue { .. } = result {
                 return Ok(result);
             }
@@ -194,14 +201,20 @@ impl Evaluator {
         condition: &Expression,
         consequence: &Expression,
         alternative: &Option<Box<Expression>>,
+        env: &mut Environment,
     ) -> anyhow::Result<Object> {
-        let condition = Evaluator::eval(Node::Expression(condition))?;
+        let condition = Evaluator::eval(Node::Expression(condition), env)?;
         if is_truthy(condition) {
-            return Evaluator::eval(Node::Expression(consequence));
+            return Evaluator::eval(Node::Expression(consequence), env);
         } else if let Some(alternative) = alternative.as_ref() {
-            return Evaluator::eval(Node::Expression(alternative.deref()));
+            return Evaluator::eval(Node::Expression(alternative.deref()), env);
         }
         Ok(NULL)
+    }
+
+    fn eval_identifier(node: &str, env: &mut Environment) -> anyhow::Result<Object> {
+        env.get(node)
+            .with_context(|| format!("Identifier not found: {}", node))
     }
 }
 

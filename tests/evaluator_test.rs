@@ -1,12 +1,19 @@
 use rost_interpreter::{
-    ast::Node, evaluator::Evaluator, lexer::Lexer, object::Object, parser::Parser,
+    ast::Node,
+    evaluator::Evaluator,
+    lexer::Lexer,
+    object::{Environment, Object},
+    parser::Parser,
 };
+use std::cell::RefCell;
 
 fn test_eval(input: &[u8]) -> anyhow::Result<Object> {
     let lexer = Lexer::new(input);
     let mut parser = Parser::new(lexer)?;
     let program = parser.parse_program()?;
-    Evaluator::eval(Node::Program(&program))
+    let env = RefCell::new(Environment::new(None));
+    let result = Evaluator::eval(Node::Program(&program), &mut env.borrow_mut());
+    result
 }
 
 fn test_integer_object(object: Object, expected: i64) {
@@ -365,16 +372,14 @@ fn error_handling() {
             .to_vec(),
             expected_message: String::from("BOOLEAN + BOOLEAN"),
         },
-        //         Test {
-        //             input: b"foobar".to_vec(),
-        //             expected_message: String::from(
-        //                 "Identifier not found: foobar",
-        //             )),
-        //         },
-        //         Test {
-        //             input: b"\"Hello\" - \"World\"".to_vec(),
-        //             expected_message: String::from("STRING - STRING"),
-        //         },
+        Test {
+            input: b"foobar".to_vec(),
+            expected_message: String::from("Identifier not found: foobar"),
+        },
+        // Test {
+        //     input: b"\"Hello\" - \"World\"".to_vec(),
+        //     expected_message: String::from("STRING - STRING"),
+        // },
     ];
     for test in tests {
         let evaluated = test_eval(&test.input);
@@ -389,34 +394,34 @@ fn error_handling() {
     }
 }
 
-// #[test]
-// fn let_statement() {
-//     struct Test {
-//         input: Vec<u8>,
-//         expected: i64,
-//     }
-//     let tests = vec![
-//         Test {
-//             input: b"let a = 5; a;".to_vec(),
-//             expected: 5,
-//         },
-//         Test {
-//             input: b"let a = 5 * 5; a;".to_vec(),
-//             expected: 25,
-//         },
-//         Test {
-//             input: b"let a = 5; let b = a; b;".to_vec(),
-//             expected: 5,
-//         },
-//         Test {
-//             input: b"let a = 5; let b = a; let c = a + b + 5; c;".to_vec(),
-//             expected: 15,
-//         },
-//     ];
-//     for test in tests {
-//         test_integer_object(test_eval(&test.input).unwrap(), test.expected);
-//     }
-// }
+#[test]
+fn let_statement() {
+    struct Test {
+        input: Vec<u8>,
+        expected: i64,
+    }
+    let tests = vec![
+        Test {
+            input: b"let a = 5; a;".to_vec(),
+            expected: 5,
+        },
+        Test {
+            input: b"let a = 5 * 5; a;".to_vec(),
+            expected: 25,
+        },
+        Test {
+            input: b"let a = 5; let b = a; b;".to_vec(),
+            expected: 5,
+        },
+        Test {
+            input: b"let a = 5; let b = a; let c = a + b + 5; c;".to_vec(),
+            expected: 15,
+        },
+    ];
+    for test in tests {
+        test_integer_object(test_eval(&test.input).unwrap(), test.expected);
+    }
+}
 
 // #[test]
 // fn function_object() {
