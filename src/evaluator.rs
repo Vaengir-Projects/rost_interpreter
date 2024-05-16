@@ -67,15 +67,21 @@ impl Evaluator {
                     Evaluator::eval_block_statement(statements, env)
                 }
                 Expression::FunctionLiteral {
-                    token,
-                    parameters,
-                    body,
-                } => todo!(),
+                    parameters, body, ..
+                } => Ok(Object::Function {
+                    parameters: parameters.to_vec(),
+                    body: body.deref().clone(),
+                    env: env.clone(),
+                }),
                 Expression::CallExpression {
-                    token,
                     function,
                     arguments,
-                } => todo!(),
+                    ..
+                } => {
+                    let function = Evaluator::eval(Node::Expression(function), env)?;
+                    let args = Evaluator::eval_expressions(arguments, env)?;
+                    Evaluator::apply_function(function, &args)
+                }
                 Expression::StringLiteral {} => todo!(),
                 Expression::ArrayLiteral {} => todo!(),
                 Expression::IndexExpression {} => todo!(),
@@ -215,6 +221,57 @@ impl Evaluator {
     fn eval_identifier(node: &str, env: &mut Environment) -> anyhow::Result<Object> {
         env.get(node)
             .with_context(|| format!("Identifier not found: {}", node))
+    }
+
+    fn eval_expressions(
+        expressions: &[Expression],
+        env: &mut Environment,
+    ) -> anyhow::Result<Vec<Object>> {
+        let mut result: Vec<Object> = Vec::new();
+        for expression in expressions {
+            let evaluated = Evaluator::eval(Node::Expression(expression), env)?;
+            result.push(evaluated);
+        }
+        Ok(result)
+    }
+
+    fn apply_function(func: Object, args: &[Object]) -> anyhow::Result<Object> {
+        match func {
+            Object::Function {
+                parameters,
+                body,
+                env,
+            } => {
+                let mut extended_env = Evaluator::extend_function_env(&parameters, args, env);
+                let evaluated = Evaluator::eval(Node::Expression(&body), &mut extended_env)?;
+                Ok(Evaluator::unwrap_return_value(evaluated))
+            }
+            e => Err(anyhow!(
+                "Expected an Object::Function or Object::BuiltIn\nGot: {}",
+                e
+            )),
+        }
+    }
+
+    fn extend_function_env(
+        parameters: &[Expression],
+        args: &[Object],
+        env: Environment,
+    ) -> Environment {
+        let mut env = Environment::new(Some(Box::new(env)));
+        for (i, param) in parameters.iter().enumerate() {
+            if let Expression::Identifier { value, .. } = param {
+                env.set(value, args[i].clone());
+            }
+        }
+        env
+    }
+
+    fn unwrap_return_value(object: Object) -> Object {
+        if let Object::ReturnValue { value } = object {
+            return *value;
+        }
+        object
     }
 }
 

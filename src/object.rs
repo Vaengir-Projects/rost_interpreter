@@ -1,3 +1,4 @@
+use crate::ast::Expression;
 use anyhow::anyhow;
 use std::{collections::HashMap, fmt::Display};
 
@@ -7,10 +8,20 @@ pub trait ObjectTrait: Display {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Object {
-    Integer { value: i64 },
-    Boolean { value: bool },
-    ReturnValue { value: Box<Object> },
-    Function {},
+    Integer {
+        value: i64,
+    },
+    Boolean {
+        value: bool,
+    },
+    ReturnValue {
+        value: Box<Object>,
+    },
+    Function {
+        parameters: Vec<Expression>,
+        body: Expression,
+        env: Environment,
+    },
     String {},
     BuiltIn {},
     Null,
@@ -22,7 +33,7 @@ impl ObjectTrait for Object {
             Object::Integer { .. } => String::from("INTEGER"),
             Object::Boolean { .. } => String::from("BOOLEAN"),
             Object::ReturnValue { .. } => String::from("RETURN_VALUE"),
-            Object::Function {} => todo!(),
+            Object::Function { .. } => String::from("FUNCTION"),
             Object::String {} => todo!(),
             Object::BuiltIn {} => todo!(),
             Object::Null => String::from("NULL"),
@@ -36,7 +47,22 @@ impl Display for Object {
             Object::Integer { value } => write!(f, "{}", value),
             Object::Boolean { value } => write!(f, "{}", value),
             Object::ReturnValue { value } => write!(f, "{}", value),
-            Object::Function {} => todo!(),
+            Object::Function {
+                parameters, body, ..
+            } => {
+                let parameters = parameters
+                    .iter()
+                    .map(|p| {
+                        if let Expression::Identifier { value, .. } = p {
+                            value.to_string()
+                        } else {
+                            String::new()
+                        }
+                    })
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                write!(f, "fn({}) {{\n  {}\n}}", parameters, body)
+            }
             Object::String {} => todo!(),
             Object::BuiltIn {} => todo!(),
             Object::Null => write!(f, "null"),
@@ -44,7 +70,7 @@ impl Display for Object {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Environment {
     store: HashMap<String, Object>,
     outer: Option<Box<Environment>>,

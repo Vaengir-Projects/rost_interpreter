@@ -1,5 +1,5 @@
 use rost_interpreter::{
-    ast::Node,
+    ast::{Expression, Node},
     evaluator::Evaluator,
     lexer::Lexer,
     object::{Environment, Object},
@@ -423,63 +423,70 @@ fn let_statement() {
     }
 }
 
-// #[test]
-// fn function_object() {
-//     let input: &[u8] = b"fn(x) { x + 2; };";
-//     let evaluated = test_eval(input).unwrap();
-//     let func = match evaluated {
-//         Object::Function(f) => f,
-//         e => panic!("Expected a Object::Function\nGot: {}", e),
-//     };
-//     assert_eq!(func.parameters.len(), 1);
-//     assert_eq!(func.parameters[0].value, "x");
-//     assert_eq!(format!("{}", func.body), "(x + 2)");
-// }
-//
-// #[test]
-// fn function_application() {
-//     struct Test {
-//         input: Vec<u8>,
-//         expected: i64,
-//     }
-//     let tests = vec![
-//         Test {
-//             input: b"let identity = fn(x) { x; }; identity(5);".to_vec(),
-//             expected: 5,
-//         },
-//         Test {
-//             input: b"let identity = fn(x) { return x; }; identity(5);".to_vec(),
-//             expected: 5,
-//         },
-//         Test {
-//             input: b"let double = fn(x) { x * 2; }; double(5);".to_vec(),
-//             expected: 10,
-//         },
-//         Test {
-//             input: b"let add = fn(x, y) { x + y; }; add(5, 5);".to_vec(),
-//             expected: 10,
-//         },
-//         Test {
-//             input: b"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));".to_vec(),
-//             expected: 20,
-//         },
-//         Test {
-//             input: b"fn(x) { x; }(5)".to_vec(),
-//             expected: 5,
-//         },
-//     ];
-//     for test in tests {
-//         integer_object(test_eval(&test.input).unwrap(), test.expected)
-//     }
-// }
-//
-// #[test]
-// fn closures() {
-//     let input: &[u8] =
-//         b"let newAdder = fn(x) { fn(y) { x + y }; }; let addTwo = newAdder(2); addTwo(2);";
-//     integer_object(test_eval(input).unwrap(), 4)
-// }
-//
+#[test]
+fn function_object() {
+    let input: &[u8] = b"fn(x) { x + 2; };";
+    let evaluated = test_eval(input).unwrap();
+    let (parameters, body) = match evaluated {
+        Object::Function {
+            parameters, body, ..
+        } => (parameters, body),
+        e => panic!("Expected a Object::Function\nGot: {}", e),
+    };
+    assert_eq!(parameters.len(), 1);
+    assert_eq!(format!("{}", body), "(x + 2)");
+    match &parameters[0] {
+        Expression::Identifier { value, .. } => {
+            assert_eq!(value, "x");
+        }
+        e => panic!("Parameter not an Expression::Identifier\nGot: {}", e),
+    }
+}
+
+#[test]
+fn function_application() {
+    struct Test {
+        input: Vec<u8>,
+        expected: i64,
+    }
+    let tests = vec![
+        Test {
+            input: b"let identity = fn(x) { x; }; identity(5);".to_vec(),
+            expected: 5,
+        },
+        Test {
+            input: b"let identity = fn(x) { return x; }; identity(5);".to_vec(),
+            expected: 5,
+        },
+        Test {
+            input: b"let double = fn(x) { x * 2; }; double(5);".to_vec(),
+            expected: 10,
+        },
+        Test {
+            input: b"let add = fn(x, y) { x + y; }; add(5, 5);".to_vec(),
+            expected: 10,
+        },
+        Test {
+            input: b"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));".to_vec(),
+            expected: 20,
+        },
+        Test {
+            input: b"fn(x) { x; }(5)".to_vec(),
+            expected: 5,
+        },
+    ];
+    for test in tests {
+        test_integer_object(test_eval(&test.input).unwrap(), test.expected)
+    }
+}
+
+#[test]
+fn closures() {
+    let input: &[u8] =
+        b"let newAdder = fn(x) { fn(y) { x + y }; }; let addTwo = newAdder(2); addTwo(2);";
+    test_integer_object(test_eval(input).unwrap(), 4)
+}
+
 // #[test]
 // fn string_literal() {
 //     let input = b"\"Hello World!\"";

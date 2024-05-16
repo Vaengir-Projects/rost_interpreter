@@ -36,7 +36,7 @@ impl Display for Program {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Statement {
     Let {
         token: Token,
@@ -79,7 +79,7 @@ impl Display for Statement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Expression {
     Identifier {
         token: Token,
