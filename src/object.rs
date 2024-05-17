@@ -1,4 +1,4 @@
-use crate::ast::Expression;
+use crate::{ast::Expression, builtin::BuiltInFunction};
 use anyhow::anyhow;
 use std::{collections::HashMap, fmt::Display};
 
@@ -25,7 +25,9 @@ pub enum Object {
     String {
         value: Vec<u8>,
     },
-    BuiltIn {},
+    BuiltIn {
+        func: BuiltInFunction,
+    },
     Null,
 }
 
@@ -37,7 +39,7 @@ impl ObjectTrait for Object {
             Object::ReturnValue { .. } => String::from("RETURN_VALUE"),
             Object::Function { .. } => String::from("FUNCTION"),
             Object::String { .. } => String::from("STRING"),
-            Object::BuiltIn {} => todo!(),
+            Object::BuiltIn { .. } => String::from("BUILTIN"),
             Object::Null => String::from("NULL"),
         }
     }
@@ -66,7 +68,7 @@ impl Display for Object {
                 write!(f, "fn({}) {{\n  {}\n}}", parameters, body)
             }
             Object::String { value } => write!(f, "{}", String::from_utf8_lossy(value)),
-            Object::BuiltIn {} => todo!(),
+            Object::BuiltIn { .. } => write!(f, "builtin function"),
             Object::Null => write!(f, "null"),
         }
     }

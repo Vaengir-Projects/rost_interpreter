@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use rost_interpreter::{
     ast::{Expression, Node},
     evaluator::Evaluator,
@@ -315,15 +316,15 @@ fn return_statements() {
             input: b"if (10 > 1) { if (10 > 1) { return 10; } return 1;}".to_vec(),
             expected: 10,
         },
-        //         Test {
-        //             input: b"let f = fn(x) { return x; x + 10; }; f(10);".to_vec(),
-        //             expected: 10,
-        //         },
-        //         Test {
-        //             input: b"let f = fn(x) { let result = x + 10; return result; return 10; }; f(10);"
-        //                 .to_vec(),
-        //             expected: 20,
-        //         },
+        Test {
+            input: b"let f = fn(x) { return x; x + 10; }; f(10);".to_vec(),
+            expected: 10,
+        },
+        Test {
+            input: b"let f = fn(x) { let result = x + 10; return result; return 10; }; f(10);"
+                .to_vec(),
+            expected: 20,
+        },
     ];
     for test in tests {
         let evaluated = test_eval(&test.input).unwrap();
@@ -509,46 +510,44 @@ fn string_concatenation() {
     assert_eq!(str, b"Hello World!");
 }
 
-// #[test]
-// fn builtin_functions() {
-//     #[derive(Debug)]
-//     struct Test {
-//         input: String,
-//         expected: Result<i64, EvaluationError>,
-//     }
-//     let tests = vec![
-//         Test {
-//             input: String::from(r#"len("")"#),
-//             expected: Ok(0),
-//         },
-//         Test {
-//             input: String::from(r#"len("four")"#),
-//             expected: Ok(4),
-//         },
-//         Test {
-//             input: String::from(r#"len("hello world")"#),
-//             expected: Ok(11),
-//         },
-//         Test {
-//             input: String::from(r#"len(1)"#),
-//             expected: Err(EvaluationError::BuiltInError(String::from(
-//                 "Wrong kind of argument.\nExpected: String\nGot: INTEGER",
-//             ))),
-//         },
-//         Test {
-//             input: String::from(r#"len("one", "two")"#),
-//             expected: Err(EvaluationError::BuiltInError(String::from(
-//                 "Wrong number of arguments.\nExpected: 1\nGot: 2",
-//             ))),
-//         },
-//     ];
-//     for test in tests {
-//         let evaluated = test_eval(&test.input);
-//         match test.expected {
-//             Ok(i) => test_integer_object(evaluated.unwrap(), i),
-//             Err(e) => {
-//                 assert_eq!(evaluated, Err(e));
-//             }
-//         }
-//     }
-// }
+#[test]
+fn builtin_functions() {
+    #[derive(Debug)]
+    struct Test {
+        input: Vec<u8>,
+        expected: anyhow::Result<i64>,
+    }
+    let tests = vec![
+        Test {
+            input: b"len(\"\")".to_vec(),
+            expected: Ok(0),
+        },
+        Test {
+            input: b"len(\"four\")".to_vec(),
+            expected: Ok(4),
+        },
+        Test {
+            input: b"len(\"hello world\")".to_vec(),
+            expected: Ok(11),
+        },
+        Test {
+            input: b"len(1)".to_vec(),
+            expected: Err(anyhow!("Wrong kind of argument.\nExpected: String\nGot: 1",)),
+        },
+        Test {
+            input: b"len(\"one\", \"two\")".to_vec(),
+            expected: Err(anyhow!("Wrong number of arguments.\nExpected: 1\nGot: 2",)),
+        },
+    ];
+    for test in tests {
+        let evaluated = test_eval(&test.input);
+        dbg!(&test.expected, &evaluated);
+        match test.expected {
+            Ok(i) => test_integer_object(evaluated.unwrap(), i),
+            Err(e) => match evaluated {
+                Err(e2) => assert_eq!(format!("{}", e), format!("{}", e2)),
+                _ => unreachable!(),
+            },
+        }
+    }
+}

@@ -1,8 +1,9 @@
 use crate::{
     ast::{Expression, Node, Program, Statement},
+    builtin::BuiltInFunction,
     object::{Environment, Object, ObjectTrait},
 };
-use anyhow::{anyhow, Context};
+use anyhow::anyhow;
 use std::ops::Deref;
 
 const NULL: Object = Object::Null;
@@ -219,8 +220,13 @@ impl Evaluator {
     }
 
     fn eval_identifier(node: &str, env: &mut Environment) -> anyhow::Result<Object> {
-        env.get(node)
-            .with_context(|| format!("Identifier not found: {}", node))
+        if let Ok(val) = env.get(node) {
+            return Ok(val);
+        }
+        if let Ok(builtin) = BuiltInFunction::is_builtin(node) {
+            return Ok(builtin);
+        }
+        Err(anyhow!("Identifier not found: {}", node))
     }
 
     fn eval_expressions(
@@ -246,6 +252,7 @@ impl Evaluator {
                 let evaluated = Evaluator::eval(Node::Expression(&body), &mut extended_env)?;
                 Ok(Evaluator::unwrap_return_value(evaluated))
             }
+            Object::BuiltIn { func } => func.run_builtin(args),
             e => Err(anyhow!(
                 "Expected an Object::Function or Object::BuiltIn\nGot: {}",
                 e
