@@ -1,5 +1,5 @@
 use rost_interpreter::{
-    ast::{Expression, NodeTrait, Statement},
+    ast::{Expression, Statement},
     lexer::Lexer,
     parser::Parser,
 };
@@ -716,4 +716,25 @@ fn call_expression_parsing() {
         }
         e => panic!("Expected: Expression::InfixExpression\nGot: {:?}", e),
     }
+}
+
+#[test]
+fn test_string_literal() {
+    let input = b"\"hello world\";";
+    let lexer = Lexer::new(input);
+    let mut parser = Parser::new(lexer).unwrap();
+    let program = parser.parse_program().unwrap();
+    assert_eq!(program.statements.len(), 1);
+    let statement = match &program.statements[0] {
+        Statement::Expression { expression, .. } => expression,
+        e => panic!("Expected: Statement::Expression\nGot: {:?}", e),
+    };
+    let literal = match statement {
+        Expression::StringLiteral { value, .. } => value,
+        e => panic!(
+            "Not the right kind of Expression. Expected: Expression::StringLiteral\nGot: {}",
+            e
+        ),
+    };
+    assert_eq!(literal, b"hello world");
 }

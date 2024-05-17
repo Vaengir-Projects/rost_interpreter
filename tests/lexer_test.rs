@@ -57,7 +57,7 @@ fn next_type() {
 
 #[test]
 fn next_token() {
-    let input = b"let five = 5;
+    let input: &[u8] = b"let five = 5;
 let ten = 10;
 let add = fn(x, y) {
 x + y;
@@ -73,6 +73,8 @@ return false;
 
 10 == 10;
 10 != 9;
+\"foobar\"
+\"foo bar\"
 ";
     struct Test {
         expected_type: TokenType,
@@ -371,14 +373,14 @@ return false;
             expected_type: TokenType::Semicolon,
             expected_literal: String::from(';'),
         },
-        // Test {
-        //     expected_type: TokenType::String,
-        //     expected_literal: String::from("foobar"),
-        // },
-        // Test {
-        //     expected_type: TokenType::String,
-        //     expected_literal: String::from("foo bar"),
-        // },
+        Test {
+            expected_type: TokenType::String,
+            expected_literal: String::from("foobar"),
+        },
+        Test {
+            expected_type: TokenType::String,
+            expected_literal: String::from("foo bar"),
+        },
         // Test {
         //     expected_type: TokenType::LBracket,
         //     expected_literal: String::from('['),

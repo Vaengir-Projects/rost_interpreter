@@ -82,7 +82,9 @@ impl Evaluator {
                     let args = Evaluator::eval_expressions(arguments, env)?;
                     Evaluator::apply_function(function, &args)
                 }
-                Expression::StringLiteral {} => todo!(),
+                Expression::StringLiteral { value, .. } => Ok(Object::String {
+                    value: value.to_vec(),
+                }),
                 Expression::ArrayLiteral {} => todo!(),
                 Expression::IndexExpression {} => todo!(),
                 Expression::Default => todo!(),
@@ -154,11 +156,9 @@ impl Evaluator {
             (Object::Integer { value: v1 }, Object::Integer { value: v2 }) => {
                 Ok(Evaluator::eval_integer_infix_expression(operator, v1, v2)?)
             }
-            // (Object::String(s), Object::String()) => Ok(eval_string_infix_expression(
-            //     operator,
-            //     s.clone(),
-            //     s2.clone(),
-            // )?),
+            (Object::String { value: v1 }, Object::String { value: v2 }) => {
+                Ok(Evaluator::eval_string_infix_expression(operator, &v1, &v2)?)
+            }
             _ => match operator {
                 b"==" => Ok(native_bool_to_bool_struct(&(left == right))),
                 b"!=" => Ok(native_bool_to_bool_struct(&(left != right))),
@@ -272,6 +272,22 @@ impl Evaluator {
             return *value;
         }
         object
+    }
+
+    fn eval_string_infix_expression(
+        operator: &[u8],
+        left: &[u8],
+        right: &[u8],
+    ) -> anyhow::Result<Object> {
+        if operator != b"+" {
+            return Err(anyhow!(
+                "STRING {} STRING",
+                String::from_utf8_lossy(operator)
+            ));
+        }
+        Ok(Object::String {
+            value: [left, right].concat(),
+        })
     }
 }
 

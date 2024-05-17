@@ -376,10 +376,10 @@ fn error_handling() {
             input: b"foobar".to_vec(),
             expected_message: String::from("Identifier not found: foobar"),
         },
-        // Test {
-        //     input: b"\"Hello\" - \"World\"".to_vec(),
-        //     expected_message: String::from("STRING - STRING"),
-        // },
+        Test {
+            input: b"\"Hello\" - \"World\"".to_vec(),
+            expected_message: String::from("STRING - STRING"),
+        },
     ];
     for test in tests {
         let evaluated = test_eval(&test.input);
@@ -487,28 +487,28 @@ fn closures() {
     test_integer_object(test_eval(input).unwrap(), 4)
 }
 
-// #[test]
-// fn string_literal() {
-//     let input = b"\"Hello World!\"";
-//     let evaluated = test_eval(input).unwrap();
-//     let str = match evaluated {
-//         Object::String(s) => s,
-//         e => panic!("Expected a Object::Function\nGot: {}", e),
-//     };
-//     assert_eq!(str.value, "Hello World!");
-// }
-//
-// #[test]
-// fn string_concatenation() {
-//     let input = b"\"Hello\" + \" \" + \"World!\"";
-//     let evaluated = test_eval(input).unwrap();
-//     let str = match evaluated {
-//         Object::String(s) => s,
-//         e => panic!("Expected a Object::Function\nGot: {}", e),
-//     };
-//     assert_eq!(str.value, String::from("Hello World!"));
-// }
-//
+#[test]
+fn string_literal() {
+    let input = b"\"Hello World!\"";
+    let evaluated = test_eval(input).unwrap();
+    let str = match evaluated {
+        Object::String { value } => value,
+        e => panic!("Expected a Object::Function\nGot: {}", e),
+    };
+    assert_eq!(str, b"Hello World!");
+}
+
+#[test]
+fn string_concatenation() {
+    let input = b"\"Hello\" + \" \" + \"World!\"";
+    let evaluated = test_eval(input).unwrap();
+    let str = match evaluated {
+        Object::String { value } => value,
+        e => panic!("Expected a Object::Function\nGot: {}", e),
+    };
+    assert_eq!(str, b"Hello World!");
+}
+
 // #[test]
 // fn builtin_functions() {
 //     #[derive(Debug)]

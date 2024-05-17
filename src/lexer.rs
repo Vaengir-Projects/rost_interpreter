@@ -67,6 +67,7 @@ impl Lexer {
             b'/' => Ok(Token::build(TokenType::Slash, &[self.char])?),
             b'<' => Ok(Token::build(TokenType::LessThan, &[self.char])?),
             b'>' => Ok(Token::build(TokenType::GreaterThan, &[self.char])?),
+            b'"' => Ok(Token::build(TokenType::String, &self.read_string()?)?),
             b'\0' => Ok(Token {
                 r#type: TokenType::EOF,
                 literal: String::from(""),
@@ -136,5 +137,16 @@ impl Lexer {
             return b'\0';
         }
         self.input[self.read_position]
+    }
+
+    fn read_string(&mut self) -> anyhow::Result<Vec<u8>> {
+        let position = self.position + 1;
+        loop {
+            self.read_char();
+            if self.char == b'"' || self.char == b'\0' {
+                break;
+            }
+        }
+        Ok(self.input[position..self.position].to_vec())
     }
 }

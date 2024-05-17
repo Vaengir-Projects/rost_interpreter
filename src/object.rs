@@ -22,7 +22,9 @@ pub enum Object {
         body: Expression,
         env: Environment,
     },
-    String {},
+    String {
+        value: Vec<u8>,
+    },
     BuiltIn {},
     Null,
 }
@@ -34,7 +36,7 @@ impl ObjectTrait for Object {
             Object::Boolean { .. } => String::from("BOOLEAN"),
             Object::ReturnValue { .. } => String::from("RETURN_VALUE"),
             Object::Function { .. } => String::from("FUNCTION"),
-            Object::String {} => todo!(),
+            Object::String { .. } => String::from("STRING"),
             Object::BuiltIn {} => todo!(),
             Object::Null => String::from("NULL"),
         }
@@ -63,7 +65,7 @@ impl Display for Object {
                     .join(", ");
                 write!(f, "fn({}) {{\n  {}\n}}", parameters, body)
             }
-            Object::String {} => todo!(),
+            Object::String { value } => write!(f, "{}", String::from_utf8_lossy(value)),
             Object::BuiltIn {} => todo!(),
             Object::Null => write!(f, "null"),
         }

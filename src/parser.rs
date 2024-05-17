@@ -66,6 +66,7 @@ impl Parser {
             TokenType::LParen => self.parse_grouped_expression()?,
             TokenType::If => self.parse_if_expression()?,
             TokenType::Function => self.parse_function_literal()?,
+            TokenType::String => self.parse_string_literal()?,
             e => return Err(anyhow!("No prefix function implemented for {:?}", e)),
         };
         let mut left_expr = prefix;
@@ -319,6 +320,13 @@ impl Parser {
             ));
         }
         Ok(arguments)
+    }
+
+    fn parse_string_literal(&mut self) -> anyhow::Result<Expression> {
+        Ok(Expression::StringLiteral {
+            token: self.cur_token.clone(),
+            value: self.cur_token.literal.clone().into(),
+        })
     }
 
     fn cur_token_is(&self, token_type: TokenType) -> bool {

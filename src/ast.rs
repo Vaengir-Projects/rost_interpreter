@@ -124,7 +124,10 @@ pub enum Expression {
         function: Box<Expression>,
         arguments: Vec<Expression>,
     },
-    StringLiteral {},
+    StringLiteral {
+        token: Token,
+        value: Vec<u8>,
+    },
     ArrayLiteral {},
     IndexExpression {},
     Default,
@@ -142,7 +145,7 @@ impl NodeTrait for Expression {
             Expression::BlockStatement { token, .. } => token.literal.clone(),
             Expression::FunctionLiteral { token, .. } => token.literal.clone(),
             Expression::CallExpression { token, .. } => token.literal.clone(),
-            Expression::StringLiteral {} => todo!(),
+            Expression::StringLiteral { token, .. } => token.literal.clone(),
             Expression::ArrayLiteral {} => todo!(),
             Expression::IndexExpression {} => todo!(),
             Expression::Default => todo!(),
@@ -217,7 +220,9 @@ impl Display for Expression {
                     .join(", ");
                 write!(f, "{}({})", function, arguments,)
             }
-            Expression::StringLiteral {} => todo!(),
+            Expression::StringLiteral { value, .. } => {
+                write!(f, "{}", String::from_utf8_lossy(value))
+            }
             Expression::ArrayLiteral {} => todo!(),
             Expression::IndexExpression {} => todo!(),
             Expression::Default => todo!(),
