@@ -719,7 +719,7 @@ fn call_expression_parsing() {
 }
 
 #[test]
-fn test_string_literal() {
+fn string_literal() {
     let input = b"\"hello world\";";
     let lexer = Lexer::new(input);
     let mut parser = Parser::new(lexer).unwrap();
@@ -737,4 +737,52 @@ fn test_string_literal() {
         ),
     };
     assert_eq!(literal, b"hello world");
+}
+
+#[test]
+fn parsing_array_literals() {
+    let input = b"[1, 2 * 2, 3 + 3]";
+    let lexer = Lexer::new(input);
+    let mut parser = Parser::new(lexer).unwrap();
+    let program = parser.parse_program().unwrap();
+    assert_eq!(program.statements.len(), 1);
+    let statement = match &program.statements[0] {
+        Statement::Expression { expression, .. } => expression,
+        e => panic!("Expected: Statement::Expression\nGot: {:?}", e),
+    };
+    let array_elements = match statement {
+        Expression::ArrayLiteral { elements, .. } => elements,
+        e => panic!(
+            "Not the right kind of Expression. Expected: Expression::ArrayLiteral\nGot: {}",
+            e
+        ),
+    };
+    assert_eq!(array_elements.len(), 3);
+    test_integer_literal(&array_elements[0], 1);
+    match &array_elements[1] {
+        Expression::InfixExpression {
+            left,
+            operator,
+            right,
+            ..
+        } => {
+            test_integer_literal(left, 2);
+            assert_eq!(operator, b"*");
+            test_integer_literal(right, 2);
+        }
+        e => panic!("Expected: Expression::InfixExpression\nGot: {:?}", e),
+    };
+    match &array_elements[2] {
+        Expression::InfixExpression {
+            left,
+            operator,
+            right,
+            ..
+        } => {
+            test_integer_literal(left, 3);
+            assert_eq!(operator, b"+");
+            test_integer_literal(right, 3);
+        }
+        e => panic!("Expected: Expression::InfixExpression\nGot: {:?}", e),
+    };
 }

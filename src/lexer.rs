@@ -52,6 +52,8 @@ impl Lexer {
             b'+' => Ok(Token::build(TokenType::Plus, &[self.char])?),
             b'{' => Ok(Token::build(TokenType::LBrace, &[self.char])?),
             b'}' => Ok(Token::build(TokenType::RBrace, &[self.char])?),
+            b'[' => Ok(Token::build(TokenType::LBracket, &[self.char])?),
+            b']' => Ok(Token::build(TokenType::RBracket, &[self.char])?),
             b'-' => Ok(Token::build(TokenType::Minus, &[self.char])?),
             b'!' => {
                 if self.peek_char() == b'=' {

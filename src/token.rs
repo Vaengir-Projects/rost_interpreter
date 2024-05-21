@@ -20,6 +20,8 @@ pub enum TokenType {
     RParen,
     LBrace,
     RBrace,
+    LBracket,
+    RBracket,
     Eq,
     NotEq,
     Function,

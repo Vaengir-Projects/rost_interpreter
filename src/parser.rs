@@ -1,7 +1,7 @@
 use crate::ast::{Expression, Program, Statement};
 use crate::token::TokenType;
 use crate::{lexer::Lexer, token::Token};
-use anyhow::anyhow;
+use anyhow::{anyhow, Ok};
 
 const LOWEST: u8 = 1;
 const EQUALS: u8 = 2;
@@ -67,6 +67,11 @@ impl Parser {
             TokenType::If => self.parse_if_expression()?,
             TokenType::Function => self.parse_function_literal()?,
             TokenType::String => self.parse_string_literal()?,
+            TokenType::LBracket => {
+                let token = self.cur_token.clone();
+                let elements = self.parse_expression_list(TokenType::RBracket)?;
+                Expression::ArrayLiteral { token, elements }
+            }
             e => return Err(anyhow!("No prefix function implemented for {:?}", e)),
         };
         let mut left_expr = prefix;
@@ -291,7 +296,8 @@ impl Parser {
 
     fn parse_call_expression(&mut self, function: Box<Expression>) -> anyhow::Result<Expression> {
         let token = self.cur_token.clone();
-        let arguments = self.parse_call_arguments()?;
+        self.next_token()?;
+        let arguments = self.parse_expression_list(TokenType::RParen)?;
         Ok(Expression::CallExpression {
             token,
             function,
@@ -299,34 +305,35 @@ impl Parser {
         })
     }
 
-    fn parse_call_arguments(&mut self) -> anyhow::Result<Vec<Expression>> {
-        self.next_token()?;
-        let mut arguments: Vec<Expression> = Vec::new();
-        if self.peek_token_is(TokenType::RParen) {
-            self.next_token()?;
-            return Ok(arguments);
-        }
-        self.next_token()?;
-        arguments.push(self.parse_expression(&LOWEST)?);
-        while self.peek_token_is(TokenType::Comma) {
-            self.next_token()?;
-            self.next_token()?;
-            arguments.push(self.parse_expression(&LOWEST)?);
-        }
-        if !self.expect_peek(TokenType::RParen)? {
-            return Err(anyhow!(
-                "Next TokenType should be 'RParen'\nGot: {:?}",
-                self.peek_token
-            ));
-        }
-        Ok(arguments)
-    }
-
     fn parse_string_literal(&mut self) -> anyhow::Result<Expression> {
         Ok(Expression::StringLiteral {
             token: self.cur_token.clone(),
             value: self.cur_token.literal.clone().into(),
         })
+    }
+
+    fn parse_expression_list(&mut self, end: TokenType) -> anyhow::Result<Vec<Expression>> {
+        let mut list: Vec<Expression> = Vec::new();
+        if self.peek_token_is(end.clone()) {
+            self.next_token()?;
+            return Ok(list);
+        }
+        self.next_token()?;
+        list.push(self.parse_expression(&LOWEST)?);
+        while self.peek_token_is(TokenType::Comma) {
+            self.next_token()?;
+            self.next_token()?;
+            list.push(self.parse_expression(&LOWEST)?);
+        }
+        if !self.expect_peek(end.clone())? {
+            return Err(anyhow!(
+                "Next TokenType should be '{:?}'\nGot: Peek: {:?} - Cur: {:?}",
+                end,
+                self.peek_token,
+                self.cur_token
+            ));
+        }
+        Ok(list)
     }
 
     fn cur_token_is(&self, token_type: TokenType) -> bool {

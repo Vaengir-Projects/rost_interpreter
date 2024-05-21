@@ -128,7 +128,10 @@ pub enum Expression {
         token: Token,
         value: Vec<u8>,
     },
-    ArrayLiteral {},
+    ArrayLiteral {
+        token: Token,
+        elements: Vec<Expression>,
+    },
     IndexExpression {},
     Default,
 }
@@ -146,7 +149,7 @@ impl NodeTrait for Expression {
             Expression::FunctionLiteral { token, .. } => token.literal.clone(),
             Expression::CallExpression { token, .. } => token.literal.clone(),
             Expression::StringLiteral { token, .. } => token.literal.clone(),
-            Expression::ArrayLiteral {} => todo!(),
+            Expression::ArrayLiteral { token, .. } => token.literal.clone(),
             Expression::IndexExpression {} => todo!(),
             Expression::Default => todo!(),
         }
@@ -223,7 +226,14 @@ impl Display for Expression {
             Expression::StringLiteral { value, .. } => {
                 write!(f, "{}", String::from_utf8_lossy(value))
             }
-            Expression::ArrayLiteral {} => todo!(),
+            Expression::ArrayLiteral { elements, .. } => {
+                let elements = elements
+                    .iter()
+                    .map(|e| e.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                write!(f, "[{}]", elements)
+            }
             Expression::IndexExpression {} => todo!(),
             Expression::Default => todo!(),
         }

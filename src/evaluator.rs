@@ -86,7 +86,7 @@ impl Evaluator {
                 Expression::StringLiteral { value, .. } => Ok(Object::String {
                     value: value.to_vec(),
                 }),
-                Expression::ArrayLiteral {} => todo!(),
+                Expression::ArrayLiteral { elements, .. } => todo!(),
                 Expression::IndexExpression {} => todo!(),
                 Expression::Default => todo!(),
             },
@@ -158,7 +158,7 @@ impl Evaluator {
                 Ok(Evaluator::eval_integer_infix_expression(operator, v1, v2)?)
             }
             (Object::String { value: v1 }, Object::String { value: v2 }) => {
-                Ok(Evaluator::eval_string_infix_expression(operator, &v1, &v2)?)
+                Ok(Evaluator::eval_string_infix_expression(operator, v1, v2)?)
             }
             _ => match operator {
                 b"==" => Ok(native_bool_to_bool_struct(&(left == right))),

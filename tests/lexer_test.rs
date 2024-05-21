@@ -75,6 +75,7 @@ return false;
 10 != 9;
 \"foobar\"
 \"foo bar\"
+[1, 2];
 ";
     struct Test {
         expected_type: TokenType,
@@ -381,30 +382,30 @@ return false;
             expected_type: TokenType::String,
             expected_literal: String::from("foo bar"),
         },
-        // Test {
-        //     expected_type: TokenType::LBracket,
-        //     expected_literal: String::from('['),
-        // },
-        // Test {
-        //     expected_type: TokenType::Int,
-        //     expected_literal: String::from("1"),
-        // },
-        // Test {
-        //     expected_type: TokenType::Comma,
-        //     expected_literal: String::from(','),
-        // },
-        // Test {
-        //     expected_type: TokenType::Int,
-        //     expected_literal: String::from("2"),
-        // },
-        // Test {
-        //     expected_type: TokenType::RBracket,
-        //     expected_literal: String::from(']'),
-        // },
-        // Test {
-        //     expected_type: TokenType::Semicolon,
-        //     expected_literal: String::from(';'),
-        // },
+        Test {
+            expected_type: TokenType::LBracket,
+            expected_literal: String::from('['),
+        },
+        Test {
+            expected_type: TokenType::Int,
+            expected_literal: String::from("1"),
+        },
+        Test {
+            expected_type: TokenType::Comma,
+            expected_literal: String::from(','),
+        },
+        Test {
+            expected_type: TokenType::Int,
+            expected_literal: String::from("2"),
+        },
+        Test {
+            expected_type: TokenType::RBracket,
+            expected_literal: String::from(']'),
+        },
+        Test {
+            expected_type: TokenType::Semicolon,
+            expected_literal: String::from(';'),
+        },
         Test {
             expected_type: TokenType::EOF,
             expected_literal: String::from(""),
