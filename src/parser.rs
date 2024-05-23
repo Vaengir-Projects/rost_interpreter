@@ -1,6 +1,8 @@
-use crate::ast::{Expression, Program, Statement};
-use crate::token::TokenType;
-use crate::{lexer::Lexer, token::Token};
+use crate::{
+    ast::{Expression, Program, Statement},
+    lexer::Lexer,
+    token::{Token, TokenType},
+};
 use anyhow::{anyhow, Ok};
 
 const LOWEST: u8 = 1;
@@ -10,7 +12,7 @@ const SUM: u8 = 4;
 const PRODUCT: u8 = 5;
 const PREFIX: u8 = 6;
 const CALL: u8 = 7;
-const _INDEX: u8 = 8;
+const INDEX: u8 = 8;
 
 #[derive(Debug)]
 pub struct Parser {
@@ -86,6 +88,7 @@ impl Parser {
                 | TokenType::LessThan
                 | TokenType::GreaterThan => self.parse_infix_expression(Box::new(left_expr))?,
                 TokenType::LParen => self.parse_call_expression(Box::new(left_expr))?,
+                TokenType::LBracket => self.parse_index_expression(Box::new(left_expr))?,
                 e => return Err(anyhow!("No infix function implemented for {:?}", e)),
             };
             left_expr = infix;
@@ -336,6 +339,21 @@ impl Parser {
         Ok(list)
     }
 
+    fn parse_index_expression(&mut self, left: Box<Expression>) -> anyhow::Result<Expression> {
+        let token = self.cur_token.clone();
+        self.next_token()?;
+        self.next_token()?;
+        let index = Box::new(self.parse_expression(&LOWEST)?);
+        if !self.expect_peek(TokenType::RBracket)? {
+            return Err(anyhow!(
+                "Next TokenType should be 'RBracket'\nGot: Peek: {:?} - Cur: {:?}",
+                self.peek_token,
+                self.cur_token
+            ));
+        }
+        Ok(Expression::IndexExpression { token, left, index })
+    }
+
     fn cur_token_is(&self, token_type: TokenType) -> bool {
         self.cur_token.r#type == token_type
     }
@@ -363,7 +381,7 @@ impl Parser {
             TokenType::Slash => PRODUCT,
             TokenType::Asterisk => PRODUCT,
             TokenType::LParen => CALL,
-            // TokenType::LBracket => INDEX,
+            TokenType::LBracket => INDEX,
             _ => LOWEST,
         }
     }

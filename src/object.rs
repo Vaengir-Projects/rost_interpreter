@@ -28,6 +28,9 @@ pub enum Object {
     BuiltIn {
         func: BuiltInFunction,
     },
+    Array {
+        elements: Vec<Object>,
+    },
     Null,
 }
 
@@ -40,6 +43,7 @@ impl ObjectTrait for Object {
             Object::Function { .. } => String::from("FUNCTION"),
             Object::String { .. } => String::from("STRING"),
             Object::BuiltIn { .. } => String::from("BUILTIN"),
+            Object::Array { .. } => String::from("ARRAY"),
             Object::Null => String::from("NULL"),
         }
     }
@@ -69,6 +73,14 @@ impl Display for Object {
             }
             Object::String { value } => write!(f, "{}", String::from_utf8_lossy(value)),
             Object::BuiltIn { .. } => write!(f, "builtin function"),
+            Object::Array { elements } => {
+                let elements = elements
+                    .iter()
+                    .map(|p| format!("{}", p))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                write!(f, "[{}]", elements)
+            }
             Object::Null => write!(f, "null"),
         }
     }

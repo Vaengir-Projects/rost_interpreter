@@ -86,8 +86,15 @@ impl Evaluator {
                 Expression::StringLiteral { value, .. } => Ok(Object::String {
                     value: value.to_vec(),
                 }),
-                Expression::ArrayLiteral { elements, .. } => todo!(),
-                Expression::IndexExpression {} => todo!(),
+                Expression::ArrayLiteral { elements, .. } => {
+                    let elements = Evaluator::eval_expressions(elements, env)?;
+                    Ok(Object::Array { elements })
+                }
+                Expression::IndexExpression { left, index, .. } => {
+                    let left = Evaluator::eval(Node::Expression(left), env)?;
+                    let index = Evaluator::eval(Node::Expression(index), env)?;
+                    Evaluator::eval_index_expression(left, index)
+                }
                 Expression::Default => todo!(),
             },
         }
@@ -239,6 +246,27 @@ impl Evaluator {
             result.push(evaluated);
         }
         Ok(result)
+    }
+
+    fn eval_index_expression(left: Object, index: Object) -> anyhow::Result<Object> {
+        match (&left, &index) {
+            (Object::Array { elements }, Object::Integer { value }) => {
+                Evaluator::eval_array_index_expression(elements.clone(), *value)
+            }
+            _ => Err(anyhow!(
+                "Index operator not supported for: {}",
+                left.r#type()
+            )),
+        }
+    }
+
+    fn eval_array_index_expression(array: Vec<Object>, index: i64) -> anyhow::Result<Object> {
+        let index: usize = index.try_into()?;
+        let max = array.len();
+        if index >= max {
+            return Err(anyhow!("Index out of bounds"));
+        }
+        Ok(array[index].clone())
     }
 
     fn apply_function(func: Object, args: &[Object]) -> anyhow::Result<Object> {

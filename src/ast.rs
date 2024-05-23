@@ -132,7 +132,11 @@ pub enum Expression {
         token: Token,
         elements: Vec<Expression>,
     },
-    IndexExpression {},
+    IndexExpression {
+        token: Token,
+        left: Box<Expression>,
+        index: Box<Expression>,
+    },
     Default,
 }
 
@@ -150,7 +154,7 @@ impl NodeTrait for Expression {
             Expression::CallExpression { token, .. } => token.literal.clone(),
             Expression::StringLiteral { token, .. } => token.literal.clone(),
             Expression::ArrayLiteral { token, .. } => token.literal.clone(),
-            Expression::IndexExpression {} => todo!(),
+            Expression::IndexExpression { token, .. } => token.literal.clone(),
             Expression::Default => todo!(),
         }
     }
@@ -234,7 +238,7 @@ impl Display for Expression {
                     .join(", ");
                 write!(f, "[{}]", elements)
             }
-            Expression::IndexExpression {} => todo!(),
+            Expression::IndexExpression { left, index, .. } => write!(f, "({}[{}])", left, index),
             Expression::Default => todo!(),
         }
     }

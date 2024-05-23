@@ -431,14 +431,14 @@ fn operator_precedence_parsing() {
             input: b"add(a + b + c * d / f + g)".to_vec(),
             expected: String::from("add((((a + b) + ((c * d) / f)) + g))"),
         },
-        // Test {
-        //     input: b"a * [1, 2, 3, 4][b * c] * d".to_vec(),
-        //     expected: String::from("((a * ([1, 2, 3, 4][(b * c)])) * d)"),
-        // },
-        // Test {
-        //     input: b"add(a * b[2], b[1], 2 * [1, 2][1])".to_vec(),
-        //     expected: String::from("add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"),
-        // },
+        Test {
+            input: b"a * [1, 2, 3, 4][b * c] * d".to_vec(),
+            expected: String::from("((a * ([1, 2, 3, 4][(b * c)])) * d)"),
+        },
+        Test {
+            input: b"add(a * b[2], b[1], 2 * [1, 2][1])".to_vec(),
+            expected: String::from("add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"),
+        },
     ];
 
     for test in tests {
@@ -785,4 +785,38 @@ fn parsing_array_literals() {
         }
         e => panic!("Expected: Expression::InfixExpression\nGot: {:?}", e),
     };
+}
+
+#[test]
+fn parsing_index_expression() {
+    let input = b"myArray[1 + 1]";
+    let lexer = Lexer::new(input);
+    let mut parser = Parser::new(lexer).unwrap();
+    let program = parser.parse_program().unwrap();
+    assert_eq!(program.statements.len(), 1);
+    let statement = match &program.statements[0] {
+        Statement::Expression { expression, .. } => expression,
+        e => panic!("Expected: Statement::Expression\nGot: {:?}", e),
+    };
+    let (left, index) = match statement {
+        Expression::IndexExpression { left, index, .. } => (left.deref(), index.deref()),
+        e => panic!("Expected: Expression::IndexExpression\nGot: {:?}", e),
+    };
+    match left {
+        Expression::Identifier { value, .. } => assert_eq!(value, "myArray"),
+        e => panic!("Expected: Expression::Identifier\nGot: {:?}", e),
+    }
+    match index {
+        Expression::InfixExpression {
+            left,
+            operator,
+            right,
+            ..
+        } => {
+            test_integer_literal(left, 1);
+            assert_eq!(operator, b"+");
+            test_integer_literal(right, 1);
+        }
+        e => panic!("Expected: Expression::Identifier\nGot: {:?}", e),
+    }
 }

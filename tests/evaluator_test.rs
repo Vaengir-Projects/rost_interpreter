@@ -551,3 +551,79 @@ fn builtin_functions() {
         }
     }
 }
+
+#[test]
+fn array_literals() {
+    let input = b"[1, 2 * 2, 3 + 3]";
+    let evaluated = test_eval(input).unwrap();
+    let elements = match evaluated {
+        Object::Array { elements } => elements,
+        e => panic!("Expected: Object::Array\nGot: {}", e),
+    };
+    assert_eq!(elements.len(), 3);
+    test_integer_object(elements[0].clone(), 1);
+    test_integer_object(elements[1].clone(), 4);
+    test_integer_object(elements[2].clone(), 6);
+}
+
+#[test]
+fn array_index_expressions() {
+    #[derive(Debug)]
+    struct Test {
+        input: Vec<u8>,
+        expected: anyhow::Result<i64>,
+    }
+    let tests = vec![
+        Test {
+            input: b"[1, 2, 3][0]".to_vec(),
+            expected: Ok(1),
+        },
+        Test {
+            input: b"[1, 2, 3][1]".to_vec(),
+            expected: Ok(2),
+        },
+        Test {
+            input: b"[1, 2, 3][2]".to_vec(),
+            expected: Ok(3),
+        },
+        Test {
+            input: b"let i = 0; [1][i];".to_vec(),
+            expected: Ok(1),
+        },
+        Test {
+            input: b"[1, 2, 3][1 + 1];".to_vec(),
+            expected: Ok(3),
+        },
+        Test {
+            input: b"let myArray = [1, 2, 3]; myArray[2];".to_vec(),
+            expected: Ok(3),
+        },
+        Test {
+            input: b"let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];".to_vec(),
+            expected: Ok(6),
+        },
+        Test {
+            input: b"let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]".to_vec(),
+            expected: Ok(2),
+        },
+        Test {
+            input: b"[1, 2, 3][3]".to_vec(),
+            expected: Err(anyhow!("Index out of bounds")),
+        },
+        Test {
+            input: b"[1, 2, 3][-1]".to_vec(),
+            expected: Err(anyhow!("out of range integral type conversion attempted")),
+        },
+    ];
+    for test in tests {
+        let evaluated = test_eval(&test.input);
+        dbg!(&evaluated);
+        match test.expected {
+            Ok(i) => test_integer_object(evaluated.unwrap(), i),
+            Err(e) => match evaluated {
+                Err(e2) => assert_eq!(format!("{}", e), format!("{}", e2)),
+                _ => unreachable!(),
+            },
+        }
+    }
+}
