@@ -532,7 +532,9 @@ fn builtin_functions() {
         },
         Test {
             input: b"len(1)".to_vec(),
-            expected: Err(anyhow!("Wrong kind of argument.\nExpected: String\nGot: 1",)),
+            expected: Err(anyhow!(
+                "Wrong kind of argument.\nExpected: String || Array\nGot: 1",
+            )),
         },
         Test {
             input: b"len(\"one\", \"two\")".to_vec(),
