@@ -1,5 +1,5 @@
 use crate::token::Token;
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display, hash::Hash};
 
 pub trait NodeTrait: Display {
     fn token_literal(&self) -> String;
@@ -36,7 +36,7 @@ impl Display for Program {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Statement {
     Let {
         token: Token,
@@ -137,6 +137,10 @@ pub enum Expression {
         left: Box<Expression>,
         index: Box<Expression>,
     },
+    HashLiteral {
+        token: Token,
+        pairs: HashMap<Box<Expression>, Box<Expression>>,
+    },
     Default,
 }
 
@@ -155,6 +159,7 @@ impl NodeTrait for Expression {
             Expression::StringLiteral { token, .. } => token.literal.clone(),
             Expression::ArrayLiteral { token, .. } => token.literal.clone(),
             Expression::IndexExpression { token, .. } => token.literal.clone(),
+            Expression::HashLiteral { token, .. } => token.literal.clone(),
             Expression::Default => todo!(),
         }
     }
@@ -239,6 +244,106 @@ impl Display for Expression {
                 write!(f, "[{}]", elements)
             }
             Expression::IndexExpression { left, index, .. } => write!(f, "({}[{}])", left, index),
+            Expression::HashLiteral { pairs, .. } => {
+                let mut pairs_str = Vec::new();
+                for (k, v) in pairs {
+                    pairs_str.push(format!("{}: {}", k, v));
+                }
+                write!(f, "{{{}}}", pairs_str.join(", "))
+            }
+            Expression::Default => todo!(),
+        }
+    }
+}
+
+impl Hash for Expression {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Expression::Identifier { token, value } => {
+                token.hash(state);
+                value.hash(state);
+            }
+            Expression::IntegerLiteral { token, value } => {
+                token.hash(state);
+                value.hash(state);
+            }
+            Expression::PrefixExpression {
+                token,
+                operator,
+                right,
+            } => {
+                token.hash(state);
+                operator.hash(state);
+                right.hash(state);
+            }
+            Expression::InfixExpression {
+                token,
+                left,
+                operator,
+                right,
+            } => {
+                token.hash(state);
+                left.hash(state);
+                operator.hash(state);
+                right.hash(state);
+            }
+            Expression::Boolean { token, value } => {
+                token.hash(state);
+                value.hash(state);
+            }
+            Expression::IfExpression {
+                token,
+                condition,
+                consequence,
+                alternative,
+            } => {
+                token.hash(state);
+                condition.hash(state);
+                consequence.hash(state);
+                alternative.hash(state);
+            }
+            Expression::BlockStatement { token, statements } => {
+                token.hash(state);
+                statements.hash(state);
+            }
+            Expression::FunctionLiteral {
+                token,
+                parameters,
+                body,
+            } => {
+                token.hash(state);
+                parameters.hash(state);
+                body.hash(state);
+            }
+            Expression::CallExpression {
+                token,
+                function,
+                arguments,
+            } => {
+                token.hash(state);
+                function.hash(state);
+                arguments.hash(state);
+            }
+            Expression::StringLiteral { token, value } => {
+                token.hash(state);
+                value.hash(state);
+            }
+            Expression::ArrayLiteral { token, elements } => {
+                token.hash(state);
+                elements.hash(state);
+            }
+            Expression::IndexExpression { token, left, index } => {
+                token.hash(state);
+                left.hash(state);
+                index.hash(state);
+            }
+            Expression::HashLiteral { token, pairs } => {
+                token.hash(state);
+                for (k, v) in pairs {
+                    k.hash(state);
+                    v.hash(state);
+                }
+            }
             Expression::Default => todo!(),
         }
     }

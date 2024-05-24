@@ -95,6 +95,7 @@ impl Evaluator {
                     let index = Evaluator::eval(Node::Expression(index), env)?;
                     Evaluator::eval_index_expression(left, index)
                 }
+                Expression::HashLiteral { pairs, .. } => todo!(),
                 Expression::Default => todo!(),
             },
         }

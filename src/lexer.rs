@@ -70,6 +70,7 @@ impl Lexer {
             b'<' => Ok(Token::build(TokenType::LessThan, &[self.char])?),
             b'>' => Ok(Token::build(TokenType::GreaterThan, &[self.char])?),
             b'"' => Ok(Token::build(TokenType::String, &self.read_string()?)?),
+            b':' => Ok(Token::build(TokenType::Colon, &[self.char])?),
             b'\0' => Ok(Token {
                 r#type: TokenType::EOF,
                 literal: String::from(""),

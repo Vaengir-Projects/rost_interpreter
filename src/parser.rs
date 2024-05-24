@@ -4,6 +4,7 @@ use crate::{
     token::{Token, TokenType},
 };
 use anyhow::{anyhow, Ok};
+use std::collections::HashMap;
 
 const LOWEST: u8 = 1;
 const EQUALS: u8 = 2;
@@ -74,6 +75,7 @@ impl Parser {
                 let elements = self.parse_expression_list(TokenType::RBracket)?;
                 Expression::ArrayLiteral { token, elements }
             }
+            TokenType::LBrace => self.parse_hash_literal()?,
             e => return Err(anyhow!("No prefix function implemented for {:?}", e)),
         };
         let mut left_expr = prefix;
@@ -352,6 +354,40 @@ impl Parser {
             ));
         }
         Ok(Expression::IndexExpression { token, left, index })
+    }
+
+    fn parse_hash_literal(&mut self) -> anyhow::Result<Expression> {
+        let token = self.cur_token.clone();
+        let mut pairs: HashMap<Box<Expression>, Box<Expression>> = HashMap::new();
+        while !self.peek_token_is(TokenType::RBrace) {
+            self.next_token()?;
+            let key = Box::from(self.parse_expression(&LOWEST)?);
+            if !self.expect_peek(TokenType::Colon)? {
+                return Err(anyhow!(
+                    "Next TokenType should be 'Colon'\nGot: Peek: {:?} - Cur: {:?}",
+                    self.peek_token,
+                    self.cur_token
+                ));
+            }
+            self.next_token()?;
+            let value = Box::from(self.parse_expression(&LOWEST)?);
+            let _ = pairs.insert(key, value);
+            if !self.peek_token_is(TokenType::RBrace) && !self.expect_peek(TokenType::Comma)? {
+                return Err(anyhow!(
+                    "Next TokenType should be 'Comma' or 'RBrace'\nGot: Peek: {:?} - Cur: {:?}",
+                    self.peek_token,
+                    self.cur_token
+                ));
+            }
+        }
+        if !self.expect_peek(TokenType::RBrace)? {
+            return Err(anyhow!(
+                "Next TokenType should be 'RBrace'\nGot: Peek: {:?} - Cur: {:?}",
+                self.peek_token,
+                self.cur_token
+            ));
+        }
+        Ok(Expression::HashLiteral { token, pairs })
     }
 
     fn cur_token_is(&self, token_type: TokenType) -> bool {

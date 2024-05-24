@@ -76,6 +76,7 @@ return false;
 \"foobar\"
 \"foo bar\"
 [1, 2];
+{\"foo\": \"bar\"}
 ";
     struct Test {
         expected_type: TokenType,
@@ -405,6 +406,26 @@ return false;
         Test {
             expected_type: TokenType::Semicolon,
             expected_literal: String::from(';'),
+        },
+        Test {
+            expected_type: TokenType::LBrace,
+            expected_literal: String::from('{'),
+        },
+        Test {
+            expected_type: TokenType::String,
+            expected_literal: String::from("foo"),
+        },
+        Test {
+            expected_type: TokenType::Colon,
+            expected_literal: String::from(':'),
+        },
+        Test {
+            expected_type: TokenType::String,
+            expected_literal: String::from("bar"),
+        },
+        Test {
+            expected_type: TokenType::RBrace,
+            expected_literal: String::from("}"),
         },
         Test {
             expected_type: TokenType::EOF,

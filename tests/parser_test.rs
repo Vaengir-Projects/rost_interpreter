@@ -3,7 +3,7 @@ use rost_interpreter::{
     lexer::Lexer,
     parser::Parser,
 };
-use std::ops::Deref;
+use std::{collections::HashMap, ops::Deref};
 
 fn test_integer_literal(integer_expression: &Expression, expected_value: i64) {
     match integer_expression {
@@ -818,5 +818,105 @@ fn parsing_index_expression() {
             test_integer_literal(right, 1);
         }
         e => panic!("Expected: Expression::Identifier\nGot: {:?}", e),
+    }
+}
+
+#[test]
+fn parsing_hash_literals_string_keys() {
+    let input = b"{\"one\": 1, \"two\": 2, \"three\": 3}";
+    let lexer = Lexer::new(input);
+    let mut parser = Parser::new(lexer).unwrap();
+    let program = parser.parse_program().unwrap();
+    assert_eq!(program.statements.len(), 1);
+    let statement = match &program.statements[0] {
+        Statement::Expression { expression, .. } => expression,
+        e => panic!("Expected: Statement::Expression\nGot: {:?}", e),
+    };
+    let pairs = match statement {
+        Expression::HashLiteral { pairs, .. } => pairs,
+        e => panic!("Expected: Expression::HashLiteral\nGot: {:?}", e),
+    };
+    assert_eq!(pairs.len(), 3);
+    let expected = HashMap::from([("one", 1), ("two", 2), ("three", 3)]);
+    for (k, v) in pairs {
+        let string = match k.deref() {
+            Expression::StringLiteral { value, .. } => value,
+            e => panic!("Expected: Expression::StringLiteral\nGot: {:?}", e),
+        };
+        let string: &str = &String::from_utf8_lossy(string);
+        let expected_value = expected.get(string).unwrap();
+        test_integer_literal(v, *expected_value);
+    }
+}
+
+#[test]
+fn parsing_empty_hash_literal() {
+    let input = b"{}";
+    let lexer = Lexer::new(input);
+    let mut parser = Parser::new(lexer).unwrap();
+    let program = parser.parse_program().unwrap();
+    assert_eq!(program.statements.len(), 1);
+    let statement = match &program.statements[0] {
+        Statement::Expression { expression, .. } => expression,
+        e => panic!("Expected: Statement::Expression\nGot: {:?}", e),
+    };
+    let pairs = match statement {
+        Expression::HashLiteral { pairs, .. } => pairs,
+        e => panic!("Expected: Expression::HashLiteral\nGot: {:?}", e),
+    };
+    assert_eq!(pairs.len(), 0);
+}
+
+#[test]
+fn parsing_hash_literals_with_expression() {
+    let input = b"{\"one\": 0 + 1, \"two\": 10 - 8, \"three\": 15 / 5}";
+    let lexer = Lexer::new(input);
+    let mut parser = Parser::new(lexer).unwrap();
+    let program = parser.parse_program().unwrap();
+    assert_eq!(program.statements.len(), 1);
+    let statement = match &program.statements[0] {
+        Statement::Expression { expression, .. } => expression,
+        e => panic!("Expected: Statement::Expression\nGot: {:?}", e),
+    };
+    let pairs = match statement {
+        Expression::HashLiteral { pairs, .. } => pairs,
+        e => panic!("Expected: Expression::HashLiteral\nGot: {:?}", e),
+    };
+    assert_eq!(pairs.len(), 3);
+    let expected = HashMap::from([("one", 1), ("two", 2), ("three", 3)]);
+    for (k, v) in pairs {
+        let string = match k.deref() {
+            Expression::StringLiteral { value, .. } => value,
+            e => panic!("Expected: Expression::StringLiteral\nGot: {:?}", e),
+        };
+        let string: &str = &String::from_utf8_lossy(string);
+        let _expected_value = expected.get(string).unwrap();
+        let (left, operator, right) = match v.deref() {
+            Expression::InfixExpression {
+                left,
+                operator,
+                right,
+                ..
+            } => (left.deref(), operator, right.deref()),
+            e => panic!("Expected: Expression::StringLiteral\nGot: {:?}", e),
+        };
+        match string {
+            "one" => {
+                test_integer_literal(left, 0);
+                assert_eq!(operator, b"+");
+                test_integer_literal(right, 1);
+            }
+            "two" => {
+                test_integer_literal(left, 10);
+                assert_eq!(operator, b"-");
+                test_integer_literal(right, 8);
+            }
+            "three" => {
+                test_integer_literal(left, 15);
+                assert_eq!(operator, b"/");
+                test_integer_literal(right, 5);
+            }
+            e => panic!("Unexpected String: {}", e),
+        }
     }
 }

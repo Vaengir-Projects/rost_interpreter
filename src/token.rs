@@ -1,6 +1,6 @@
 use anyhow::Context;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum TokenType {
     Illegal,
     EOF,
@@ -32,9 +32,10 @@ pub enum TokenType {
     Else,
     Return,
     String,
+    Colon,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Token {
     pub r#type: TokenType,
     pub literal: String,
