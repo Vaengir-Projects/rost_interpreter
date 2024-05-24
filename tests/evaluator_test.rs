@@ -6,7 +6,7 @@ use rost_interpreter::{
     object::{Environment, Object},
     parser::Parser,
 };
-use std::cell::RefCell;
+use std::{cell::RefCell, collections::HashMap};
 
 fn test_eval(input: &[u8]) -> anyhow::Result<Object> {
     let lexer = Lexer::new(input);
@@ -627,5 +627,52 @@ fn array_index_expressions() {
                 _ => unreachable!(),
             },
         }
+    }
+}
+
+#[test]
+fn hash_literals() {
+    let input = b"let two = \"two\";
+{
+\"one\": 10 - 9,
+two: 1 + 1,
+\"thr\" + \"ee\": 6 / 2,
+4: 4,
+true: 5,
+false: 6
+}";
+
+    let evaluated = test_eval(input).unwrap();
+    let hash_pairs = match evaluated {
+        Object::Hash { pairs } => pairs,
+        e => panic!("Expected: Object::Hash\nGot: {}", e),
+    };
+    let expected: HashMap<Object, i64> = HashMap::from([
+        (
+            Object::String {
+                value: b"one".to_vec(),
+            },
+            1,
+        ),
+        (
+            Object::String {
+                value: b"two".to_vec(),
+            },
+            2,
+        ),
+        (
+            Object::String {
+                value: b"three".to_vec(),
+            },
+            3,
+        ),
+        (Object::Integer { value: 4 }, 4),
+        (Object::Boolean { value: true }, 5),
+        (Object::Boolean { value: false }, 6),
+    ]);
+    assert_eq!(hash_pairs.len(), expected.len());
+    for (ek, ev) in expected {
+        let value = hash_pairs.get(&ek).unwrap();
+        test_integer_object(value.clone(), ev);
     }
 }

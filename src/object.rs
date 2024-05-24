@@ -1,6 +1,6 @@
 use crate::{ast::Expression, builtin::BuiltInFunction};
 use anyhow::anyhow;
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::HashMap, fmt::Display, hash::Hash};
 
 pub trait ObjectTrait: Display {
     fn r#type(&self) -> String;
@@ -31,6 +31,9 @@ pub enum Object {
     Array {
         elements: Vec<Object>,
     },
+    Hash {
+        pairs: HashMap<Object, Object>,
+    },
     Null,
 }
 
@@ -44,6 +47,7 @@ impl ObjectTrait for Object {
             Object::String { .. } => String::from("STRING"),
             Object::BuiltIn { .. } => String::from("BUILTIN"),
             Object::Array { .. } => String::from("ARRAY"),
+            Object::Hash { .. } => String::from("HASH"),
             Object::Null => String::from("NULL"),
         }
     }
@@ -81,7 +85,44 @@ impl Display for Object {
                     .join(", ");
                 write!(f, "[{}]", elements)
             }
+            Object::Hash { pairs } => {
+                let pairs = pairs
+                    .iter()
+                    .map(|(k, v)| format!("{}: {}", k, v))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                write!(f, "{{{}}}", pairs)
+            }
             Object::Null => write!(f, "null"),
+        }
+    }
+}
+
+impl Hash for Object {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Object::Integer { value } => value.hash(state),
+            Object::Boolean { value } => value.hash(state),
+            Object::ReturnValue { value } => value.hash(state),
+            Object::Function {
+                parameters,
+                body,
+                env,
+            } => {
+                parameters.hash(state);
+                body.hash(state);
+                env.hash(state);
+            }
+            Object::String { value } => value.hash(state),
+            Object::BuiltIn { func } => func.hash(state),
+            Object::Array { elements } => elements.hash(state),
+            Object::Hash { pairs } => {
+                for (k, v) in pairs {
+                    k.hash(state);
+                    v.hash(state);
+                }
+            }
+            Object::Null => todo!(),
         }
     }
 }
@@ -120,5 +161,19 @@ impl Environment {
 
     pub fn new_enclosed_environment(outer: &mut Environment) -> Environment {
         Environment::new(Some(Box::new(outer.clone())))
+    }
+}
+
+impl Hash for Environment {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Environment { store, outer } => {
+                for (k, v) in store {
+                    k.hash(state);
+                    v.hash(state);
+                }
+                outer.hash(state);
+            }
+        }
     }
 }

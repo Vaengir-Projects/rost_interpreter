@@ -1,7 +1,7 @@
 use crate::object::Object;
 use anyhow::anyhow;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum BuiltInFunction {
     LenFunction,
     FirstFunction,

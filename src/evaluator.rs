@@ -4,7 +4,7 @@ use crate::{
     object::{Environment, Object, ObjectTrait},
 };
 use anyhow::anyhow;
-use std::ops::Deref;
+use std::{collections::HashMap, ops::Deref};
 
 const NULL: Object = Object::Null;
 const TRUE: Object = Object::Boolean { value: true };
@@ -95,7 +95,9 @@ impl Evaluator {
                     let index = Evaluator::eval(Node::Expression(index), env)?;
                     Evaluator::eval_index_expression(left, index)
                 }
-                Expression::HashLiteral { pairs, .. } => todo!(),
+                Expression::HashLiteral { pairs, .. } => {
+                    Ok(Evaluator::eval_hash_literal(pairs, env)?)
+                }
                 Expression::Default => todo!(),
             },
         }
@@ -324,6 +326,19 @@ impl Evaluator {
         Ok(Object::String {
             value: [left, right].concat(),
         })
+    }
+
+    fn eval_hash_literal(
+        mapped_expressions: &HashMap<Box<Expression>, Box<Expression>>,
+        env: &mut Environment,
+    ) -> anyhow::Result<Object> {
+        let mut pairs: HashMap<Object, Object> = HashMap::new();
+        for (k, v) in mapped_expressions {
+            let key = Evaluator::eval(Node::Expression(k), env)?;
+            let value = Evaluator::eval(Node::Expression(v), env)?;
+            pairs.insert(key, value);
+        }
+        Ok(Object::Hash { pairs })
     }
 }
 
