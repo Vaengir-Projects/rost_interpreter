@@ -8,6 +8,7 @@ pub enum BuiltInFunction {
     LastFunction,
     RestFunction,
     PushFunction,
+    PutsFunction,
 }
 
 impl BuiltInFunction {
@@ -27,6 +28,9 @@ impl BuiltInFunction {
             }),
             "push" => Ok(Object::BuiltIn {
                 func: BuiltInFunction::PushFunction,
+            }),
+            "puts" => Ok(Object::BuiltIn {
+                func: BuiltInFunction::PutsFunction,
             }),
             &_ => Err(anyhow!("Not a builtin function")),
         }
@@ -124,6 +128,12 @@ impl BuiltInFunction {
                         e
                     )),
                 }
+            }
+            BuiltInFunction::PutsFunction => {
+                for arg in args {
+                    println!("{}", arg);
+                }
+                Ok(Object::Null)
             }
         }
     }

@@ -166,14 +166,11 @@ impl Environment {
 
 impl Hash for Environment {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        match self {
-            Environment { store, outer } => {
-                for (k, v) in store {
-                    k.hash(state);
-                    v.hash(state);
-                }
-                outer.hash(state);
-            }
+        let Environment { store, outer } = self;
+        for (k, v) in store {
+            k.hash(state);
+            v.hash(state);
         }
+        outer.hash(state);
     }
 }

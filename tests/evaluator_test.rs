@@ -381,6 +381,10 @@ fn error_handling() {
             input: b"\"Hello\" - \"World\"".to_vec(),
             expected_message: String::from("STRING - STRING"),
         },
+        Test {
+            input: b"{\"name\": \"Monkey\"}[fn(x) { x }];".to_vec(),
+            expected_message: String::from("Unusable as hash key: FUNCTION"),
+        },
     ];
     for test in tests {
         let evaluated = test_eval(&test.input);
@@ -674,5 +678,57 @@ false: 6
     for (ek, ev) in expected {
         let value = hash_pairs.get(&ek).unwrap();
         test_integer_object(value.clone(), ev);
+    }
+}
+
+#[test]
+fn hash_index_expression() {
+    #[derive(Debug)]
+    struct Test {
+        input: Vec<u8>,
+        expected: anyhow::Result<i64>,
+    }
+    let tests = vec![
+        Test {
+            input: b"{\"foo\": 5}[\"foo\"]".to_vec(),
+            expected: Ok(5),
+        },
+        Test {
+            input: b"{\"foo\": 5}[\"bar\"]".to_vec(),
+            expected: Err(anyhow!(
+                "Couldn't find bar in {{String {{ value: [102, 111, 111] }}: Integer {{ value: 5 }}}}"
+            )),
+        },
+        Test {
+            input: b"let key = \"foo\"; {\"foo\": 5}[key]".to_vec(),
+            expected: Ok(5),
+        },
+        Test {
+            input: b"{}[\"foo\"]".to_vec(),
+            expected: Err(anyhow!("Couldn't find foo in {{}}")),
+        },
+        Test {
+            input: b"{5: 5}[5]".to_vec(),
+            expected: Ok(5),
+        },
+        Test {
+            input: b"{true: 5}[true]".to_vec(),
+            expected: Ok(5),
+        },
+        Test {
+            input: b"{false: 5}[false]".to_vec(),
+            expected: Ok(5),
+        },
+    ];
+    for test in tests {
+        let evaluated = test_eval(&test.input);
+        dbg!(&evaluated);
+        match test.expected {
+            Ok(i) => test_integer_object(evaluated.unwrap(), i),
+            Err(e) => match evaluated {
+                Err(e2) => assert_eq!(format!("{}", e), format!("{}", e2)),
+                _ => unreachable!(),
+            },
+        }
     }
 }

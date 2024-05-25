@@ -256,6 +256,7 @@ impl Evaluator {
             (Object::Array { elements }, Object::Integer { value }) => {
                 Evaluator::eval_array_index_expression(elements.clone(), *value)
             }
+            (Object::Hash { pairs }, _) => Evaluator::eval_hash_index_expression(pairs, index),
             _ => Err(anyhow!(
                 "Index operator not supported for: {}",
                 left.r#type()
@@ -339,6 +340,19 @@ impl Evaluator {
             pairs.insert(key, value);
         }
         Ok(Object::Hash { pairs })
+    }
+
+    fn eval_hash_index_expression(
+        hash: &HashMap<Object, Object>,
+        index: Object,
+    ) -> anyhow::Result<Object> {
+        if let Object::Function { .. } = index {
+            return Err(anyhow!("Unusable as hash key: FUNCTION"));
+        };
+        let pair = hash
+            .get(&index)
+            .ok_or(anyhow!("Couldn't find {} in {:?}", index, hash))?;
+        Ok(pair.clone())
     }
 }
 
